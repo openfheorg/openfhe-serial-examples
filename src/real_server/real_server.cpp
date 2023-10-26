@@ -1,14 +1,14 @@
 // @file real-server - code to simulate a server to show an example of encrypted
 // server-client processing relationships.
 //
-//The server serializes contexts, public key and processing keys for
+// The server serializes contexts, public key and processing keys for
 // the client to then load. It then generates and encrypts some data
 // to send to the client. The client loads the crypto context and
 // keys, then operates on the encrypted data, encrypts additional
 // data, and sends the results back to the server.  Finally, the
 // server decrypts the result and in this demo verifies that results
 // are correct.
-// 
+//
 // @author: Ian Quah, Dave Cousins
 // TPOC: contact@openfhe-crypto.org
 
@@ -32,8 +32,8 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include "utils.h"
 #include "openfhe.h"
+#include "utils.h"
 
 using namespace lbcrypto;
 
@@ -41,7 +41,7 @@ using namespace lbcrypto;
  * Mocks a server which supports some basic operations
  */
 class Server {
- public:
+public:
   /**
    * Instantiation of our "Server"
    * @param multDepth - integer describing the multiplicative depth for our CKKS
@@ -56,8 +56,8 @@ class Server {
   void sendCCAndKeys(void);
 
   /**
-   * generateAndSendData - read from some internal location, encrypt then send it off
-   * for some client to process
+   * generateAndSendData - read from some internal location, encrypt then send
+   * it off for some client to process
    *    - in this case we write the data directly to a file (specified in
    * GConfig)
    */
@@ -65,7 +65,7 @@ class Server {
 
   /**
    * receiveAndVerifyData - receive data from client and
-   * verify it. 
+   * verify it.
    *
    */
   void receiveAndVerifyData(void);
@@ -76,9 +76,9 @@ class Server {
    */
   void cleanupFiles(void);
 
- private:
+private:
   /**
-   * readData - reads data from a local source (in reality just generate it) 
+   * readData - reads data from a local source (in reality just generate it)
    * @return complex matrix of values of interest
    */
   complexMatrix readData(void);
@@ -98,7 +98,6 @@ class Server {
    */
   void writeData(const ciphertextMatrix &matrix);
 
-
   KeyPair<DCRTPoly> m_kp;
   CryptoContext<DCRTPoly> m_cc;
   int m_vectorSize = 0;
@@ -109,12 +108,12 @@ class Server {
 /////////////////////////////////////////////////////////////////
 
 Server::Server(int multDepth, int scaleModSize, int batchSize) {
-  
+
   CCParams<CryptoContextCKKSRNS> parameters;
   parameters.SetMultiplicativeDepth(multDepth);
   parameters.SetScalingModSize(scaleModSize);
   parameters.SetBatchSize(batchSize);
-  
+
   m_cc = GenCryptoContext(parameters);
 
   m_cc->Enable(PKE);
@@ -123,8 +122,8 @@ Server::Server(int multDepth, int scaleModSize, int batchSize) {
 
   m_kp = m_cc->KeyGen();
   m_cc->EvalMultKeyGen(m_kp.secretKey);
-  m_cc->EvalAtIndexKeyGen(m_kp.secretKey, {1, 2, -1, -2}); //only need four rotations
-
+  m_cc->EvalAtIndexKeyGen(m_kp.secretKey,
+                          {1, 2, -1, -2}); // only need four rotations
 }
 
 /**
@@ -139,7 +138,8 @@ void Server::generateAndSendData(void) {
 }
 
 /**
- * receiveAndVerifyData - "receive" a payload from the client and verify the results
+ * receiveAndVerifyData - "receive" a payload from the client and verify the
+ * results
  */
 void Server::receiveAndVerifyData(void) {
   /////////////////////////////////////////////////////////////////
@@ -162,7 +162,7 @@ void Server::receiveAndVerifyData(void) {
   Serial::DeserializeFromFile(GConf.cipherMultLocation,
                               serverCiphertextFromClient_Mult, SerType::BINARY);
   fRemove(GConf.cipherMultLocation);
-  
+
   Serial::DeserializeFromFile(GConf.cipherAddLocation,
                               serverCiphertextFromClient_Add, SerType::BINARY);
   fRemove(GConf.cipherAddLocation);
@@ -175,11 +175,12 @@ void Server::receiveAndVerifyData(void) {
                               serverCiphertextFromClient_RogNeg,
                               SerType::BINARY);
   fRemove(GConf.cipherRotNegLocation);
-  
+
   Serial::DeserializeFromFile(GConf.clientVectorLocation,
                               serverCiphertextFromClient_Vec, SerType::BINARY);
   fRemove(GConf.clientVectorLocation);
-  std::cout << "SERVER: Deserialized all processed encrypted data from client" << std::endl;
+  std::cout << "SERVER: Deserialized all processed encrypted data from client"
+            << std::endl;
 
   Plaintext serverPlaintextFromClient_Mult;
   Plaintext serverPlaintextFromClient_Add;
@@ -281,8 +282,7 @@ ciphertextMatrix Server::packAndEncrypt(const complexMatrix &matrixOfData) {
 void Server::sendCCAndKeys(void) {
 
   std::cout << "SERVER: sending cryptocontext" << std::endl;
-  if (!Serial::SerializeToFile(GConf.ccLocation, m_cc,
-                               SerType::BINARY)) {
+  if (!Serial::SerializeToFile(GConf.ccLocation, m_cc, SerType::BINARY)) {
     std::cerr << "Error writing serialization of the crypto context to "
                  "cryptocontext.txt"
               << std::endl;
@@ -290,8 +290,8 @@ void Server::sendCCAndKeys(void) {
   }
 
   std::cout << "SERVER: sending Public key" << std::endl;
-  if (!Serial::SerializeToFile(GConf.pubKeyLocation,
-                               m_kp.publicKey, SerType::BINARY)) {
+  if (!Serial::SerializeToFile(GConf.pubKeyLocation, m_kp.publicKey,
+                               SerType::BINARY)) {
     std::cerr << "Exception writing public key to pubkey.txt" << std::endl;
     std::exit(1);
   }
@@ -332,15 +332,15 @@ void Server::sendCCAndKeys(void) {
 void Server::writeData(const ciphertextMatrix &matrix) {
 
   std::cout << "SERVER: sending encrypted data" << std::endl;
-  if (!Serial::SerializeToFile(GConf.cipherOneLocation,
-                               matrix[0], SerType::BINARY)) {
+  if (!Serial::SerializeToFile(GConf.cipherOneLocation, matrix[0],
+                               SerType::BINARY)) {
     std::cerr << "SERVER: Error writing ciphertext 1" << std::endl;
     std::exit(1);
   }
 
   std::cout << "SERVER: ciphertext1 serialized" << std::endl;
-  if (!Serial::SerializeToFile(GConf.cipherTwoLocation,
-                               matrix[1], SerType::BINARY)) {
+  if (!Serial::SerializeToFile(GConf.cipherTwoLocation, matrix[1],
+                               SerType::BINARY)) {
     std::cerr << "SERVER: Error writing ciphertext 2" << std::endl;
     std::exit(1);
   };
@@ -352,7 +352,7 @@ void Server::writeData(const ciphertextMatrix &matrix) {
  * @param none
  */
 void Server::cleanupFiles(void) {
-  std::cout <<" removing "<< GConf.ccLocation<<std::endl;
+  std::cout << " removing " << GConf.ccLocation << std::endl;
   fRemove(GConf.ccLocation);
   fRemove(GConf.pubKeyLocation);
   fRemove(GConf.multKeyLocation);
@@ -370,13 +370,12 @@ void Server::cleanupFiles(void) {
 /////////////////////////////////////////////////////////////////////////////
 int main() {
 
-  std::cout << "This program requres the subdirectory `"
-            << GConf.DATAFOLDER << "' to exist, otherwise you will get "
+  std::cout << "This program requres the subdirectory `" << GConf.DATAFOLDER
+            << "' to exist, otherwise you will get "
             << "an error writing serializations." << std::endl;
 
-  
   TimeVar t;
-  
+
   const int multDepth = 5;
   const int scaleFactorBits = 40;
   const usint batchSize = 32;
@@ -387,16 +386,16 @@ int main() {
 
   std::cout << "SERVER: Cleaning up stray files" << std::endl;
   server.cleanupFiles();
-  
+
   std::cout << "SERVER: creating and acquiring server lock" << std::endl;
-  GConf.serverLock = createAndAcquireLock(GConf.SERVER_LOCK); 
-  std::cout << "SERVER: computing crypto context and keys" << std::endl;  
+  GConf.serverLock = createAndAcquireLock(GConf.SERVER_LOCK);
+  std::cout << "SERVER: computing crypto context and keys" << std::endl;
 
   server.sendCCAndKeys();
   server.generateAndSendData();
 
   std::cout << "SERVER: Releasing server lock" << std::endl;
-  releaseLock(GConf.serverLock,GConf.SERVER_LOCK);
+  releaseLock(GConf.serverLock, GConf.SERVER_LOCK);
   std::cout << "SERVER: Acquiring client lock" << std::endl;
   GConf.clientLock = openLock(GConf.CLIENT_LOCK);
 
@@ -418,5 +417,5 @@ int main() {
   removeLock(GConf.clientLock, GConf.CLIENT_LOCK);
   std::cout << "SERVER: Exiting" << std::endl;
   double totalTimeMSec = TOC_MS(t);
-  std::cout << "SERVER: Total time: " << totalTimeMSec << " mSec" << std::endl;  
+  std::cout << "SERVER: Total time: " << totalTimeMSec << " mSec" << std::endl;
 }

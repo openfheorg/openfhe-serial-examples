@@ -1,4 +1,4 @@
-// @file pre-server.cpp - Example of a Proxy Re-Encryption server 
+// @file pre-server.cpp - Example of a Proxy Re-Encryption server
 // @author: Ian Quah, David Cousins
 // TPOC: contact@openfhe-crypto.org
 
@@ -24,17 +24,18 @@
 
 // @section DESCRIPTION
 // Example software for multiparty proxy-reencryption of an integer buffer using
-// BFV rns scheme. Server application. 
+// BFV rns scheme. Server application.
 
-// uses lightweight ASIO connection library Copyright 2018 - 2020 OneLoneCoder.com
+// uses lightweight ASIO connection library Copyright 2018 - 2020
+// OneLoneCoder.com
 
 #define PROFILE
 
 #include <getopt.h>
 
 #include "openfhe.h"
-#include "pre_utils.h"
 #include "pre_server.h"
+#include "pre_utils.h"
 
 using namespace lbcrypto;
 
@@ -54,38 +55,37 @@ int main(int argc, char *argv[]) {
   ////////////////////////////////////////////////////////////
   int opt;
   uint32_t port(0);
-  
+
   while ((opt = getopt(argc, argv, "p:h")) != -1) {
     switch (opt) {
-	case 'p':
-	  port = atoi(optarg);
-	  std::cout << "host port " << port << std::endl;
-	  break;
-	case 'h':
-	default: /* '?' */
-	  std::cerr << "Usage: " << std::endl
-				<< "arguments:" << std::endl
-				<< "  -p port of the server" << std::endl
-				<< "  -h prints this message" << std::endl;
-	  std::exit(EXIT_FAILURE);
+    case 'p':
+      port = atoi(optarg);
+      std::cout << "host port " << port << std::endl;
+      break;
+    case 'h':
+    default: /* '?' */
+      std::cerr << "Usage: " << std::endl
+                << "arguments:" << std::endl
+                << "  -p port of the server" << std::endl
+                << "  -h prints this message" << std::endl;
+      std::exit(EXIT_FAILURE);
     }
   }
 
-  //verify inputs
+  // verify inputs
   if (port == 0) {
-	std::cerr << "port must be specified "<<std::endl;
-	exit (EXIT_FAILURE);
+    std::cerr << "port must be specified " << std::endl;
+    exit(EXIT_FAILURE);
   }
 
   PROFILELOG("SERVER: Initializing");
- 
-  PreServer server(port); 
-  server.Start();
-  
-  while (1) {
-	server.Update(-1, true);
-  }
-  PROFILELOG("SERVER: Exiting");  
-  return(EXIT_SUCCESS);
 
+  PreServer server(port);
+  server.Start();
+
+  while (1) {
+    server.Update(-1, true);
+  }
+  PROFILELOG("SERVER: Exiting");
+  return (EXIT_SUCCESS);
 }

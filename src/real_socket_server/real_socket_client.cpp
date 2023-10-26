@@ -1,14 +1,14 @@
-// @file real-socket-client - code to simulate a client to show an example of encrypted
-// server-client processing relationships.
+// @file real-socket-client - code to simulate a client to show an example of
+// encrypted server-client processing relationships.
 //
-//The server serializes contexts, public key and processing keys for
+// The server serializes contexts, public key and processing keys for
 // the client to then load. It then generates and encrypts some data
 // to send to the client. The client loads the crypto context and
 // keys, then operates on the encrypted data, encrypts additional
 // data, and sends the results back to the server.  Finally, the
 // server decrypts the result and in this demo verifies that results
 // are correct.
-// 
+//
 // @author: Ian Quah, Dave Cousins
 // TPOC: contact@openfhe-crypto.org
 
@@ -32,8 +32,8 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include "utils_socket.h"
 #include "openfhe.h"
+#include "utils_socket.h"
 
 using namespace lbcrypto;
 
@@ -44,8 +44,8 @@ std::tuple<CC, PubKey> recvCCAndKeys(tcp::socket &s) {
   // keeping any contexts in the process. Use it before creating a new CC
   /////////////////////////////////////////////////////////////////
   CFactory::ReleaseAllContexts();
-  
-  CC clientCC= recvCC(s);
+
+  CC clientCC = recvCC(s);
 
   /////////////////////////////////////////////////////////////////
   // NOTE: the following 2 lines are essential
@@ -64,13 +64,9 @@ std::tuple<CC, PubKey> recvCCAndKeys(tcp::socket &s) {
   return std::make_tuple(clientCC, clientPublicKey);
 }
 
+void computeAndSendData(tcp::socket &s, CC &clientCC, CT &clientC1,
+                        CT &clientC2, PubKey &clientPublicKey) {
 
-void computeAndSendData(tcp::socket &s,
-						CC &clientCC,
-						CT &clientC1,
-						CT &clientC2,
-						PubKey &clientPublicKey) {
-  
   std::cout << "CLIENT: Applying operations on data" << std::endl;
   auto clientCiphertextMult = clientCC->EvalMult(clientC1, clientC2);
   auto clientCiphertextAdd = clientCC->EvalAdd(clientC1, clientC2);
@@ -84,12 +80,12 @@ void computeAndSendData(tcp::socket &s,
   complexVector clientVector1 = {1.0, 2.0, 3.0, 4.0};
   if (clientVector1.size() != VECTORSIZE) {
     std::cerr << "clientVector1 size was modified. Must be of length 4"
-	      << std::endl;
+              << std::endl;
     exit(1);
   }
   auto clientPlaintext1 = clientCC->MakeCKKSPackedPlaintext(clientVector1);
   auto clientInitiatedEncryption =
-    clientCC->Encrypt(clientPublicKey, clientPlaintext1);
+      clientCC->Encrypt(clientPublicKey, clientPlaintext1);
 
   sendCT(s, clientCiphertextMult);
   sendCT(s, clientCiphertextAdd);
@@ -101,13 +97,11 @@ void computeAndSendData(tcp::socket &s,
 /////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////
 
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[]) {
 
   // note GConf is a global structure defined in utils.h
-   try
-  {
-    if (argc != 3)
-    {
+  try {
+    if (argc != 3) {
       std::cerr << "Usage: real-socket-client <host> <port>\n";
       return 1;
     }
@@ -116,46 +110,45 @@ int main(int argc, char* argv[]) {
 
     tcp::socket s(io_context);
     tcp::resolver resolver(io_context);
-	std::cout << "CLIENT: connecting to " << argv[1] << ":" << argv[2] << std::endl;
-	bool connected(false);
-	while (!connected) {
-	  try { 
-		boost::asio::connect(s, resolver.resolve(argv[1], argv[2]));
-		connected = true;
-	  } catch (std::exception& e) {
-	    if (e.what() == std::string("connect: Connection refused")) {
-		  std::cout << "waiting for socket " << argv[1] << ":" << argv[2]
-					<< " to be created" << std::endl;
-		} else {
-		  std::cerr<<"Error in socket connect " << e.what() << std::endl;
-		  exit(EXIT_FAILURE);
-		}
-		nap(1000);
-	  }
-	}
-	  
-	std::cout << "CLIENT: connected" << std::endl;
-  
-	/////////////////////////////////////////////////////////////////
-	// Actual client work
-	/////////////////////////////////////////////////////////////////
+    std::cout << "CLIENT: connecting to " << argv[1] << ":" << argv[2]
+              << std::endl;
+    bool connected(false);
+    while (!connected) {
+      try {
+        boost::asio::connect(s, resolver.resolve(argv[1], argv[2]));
+        connected = true;
+      } catch (std::exception &e) {
+        if (e.what() == std::string("connect: Connection refused")) {
+          std::cout << "waiting for socket " << argv[1] << ":" << argv[2]
+                    << " to be created" << std::endl;
+        } else {
+          std::cerr << "Error in socket connect " << e.what() << std::endl;
+          exit(EXIT_FAILURE);
+        }
+        nap(1000);
+      }
+    }
 
-	auto ccAndPubKeyAsTuple = recvCCAndKeys(s);
-	auto clientCC = std::get<CRYPTOCONTEXT_INDEX>(ccAndPubKeyAsTuple);
-	auto clientPublicKey = std::get<PUBLICKEY_INDEX>(ccAndPubKeyAsTuple);
-  
-	std::cout << "CLIENT: Getting ciphertexts" << std::endl;
-	CT clientC1 = recvCT(s);
-	CT clientC2 = recvCT(s);
+    std::cout << "CLIENT: connected" << std::endl;
 
-	std::cout << "CLIENT: Computing and Serializing results" << std::endl;
-	computeAndSendData(s, clientCC, clientC1, clientC2, clientPublicKey);
+    /////////////////////////////////////////////////////////////////
+    // Actual client work
+    /////////////////////////////////////////////////////////////////
 
+    auto ccAndPubKeyAsTuple = recvCCAndKeys(s);
+    auto clientCC = std::get<CRYPTOCONTEXT_INDEX>(ccAndPubKeyAsTuple);
+    auto clientPublicKey = std::get<PUBLICKEY_INDEX>(ccAndPubKeyAsTuple);
 
-  } catch (std::exception& e) {
+    std::cout << "CLIENT: Getting ciphertexts" << std::endl;
+    CT clientC1 = recvCT(s);
+    CT clientC2 = recvCT(s);
+
+    std::cout << "CLIENT: Computing and Serializing results" << std::endl;
+    computeAndSendData(s, clientCC, clientC1, clientC2, clientPublicKey);
+
+  } catch (std::exception &e) {
     std::cerr << "Exception: " << e.what() << "\n";
   }
 
   return EXIT_SUCCESS;
-
 }

@@ -6,8 +6,9 @@
 // common to both parties (Alice and Bob) in the threshold encryption
 // computation
 class ThreshCommonClient : public olc::net::client_interface<ThreshMsgTypes> {
- public:
-  OPENFHE_DEBUG_FLAG(false);  // set to true to turn on OPENFHE_DEBUG() statements
+public:
+  OPENFHE_DEBUG_FLAG(
+      false); // set to true to turn on OPENFHE_DEBUG() statements
 
   void RequestCC(void) {
     olc::net::message<ThreshMsgTypes> msg;
@@ -57,14 +58,13 @@ class ThreshCommonClient : public olc::net::client_interface<ThreshMsgTypes> {
     msg.header.id = ThreshMsgTypes::DisconnectClient;
     Send(msg);
   }
-
-
 };
 
 // Alice client methods
 class ClientA : public ThreshCommonClient {
- public:
-  OPENFHE_DEBUG_FLAG(false);  // set to true to turn on OPENFHE_DEBUG() statements
+public:
+  OPENFHE_DEBUG_FLAG(
+      false); // set to true to turn on OPENFHE_DEBUG() statements
   void RequestRnd2SharedKey(void) {
     olc::net::message<ThreshMsgTypes> msg;
     OPENFHE_DEBUG("Client: Requesting Round 2 public key");
@@ -163,8 +163,8 @@ class ClientA : public ThreshCommonClient {
     Send(msg);
   }
 
-  void SendRnd1evalSumKeys(
-      std::shared_ptr<std::map<usint, EvKey>> &EvalSumKeys) {
+  void
+  SendRnd1evalSumKeys(std::shared_ptr<std::map<usint, EvKey>> &EvalSumKeys) {
     std::string s;
     std::ostringstream os(s);
     OPENFHE_DEBUG("Alice: serializing EvalSumkeys");
@@ -294,8 +294,9 @@ class ClientA : public ThreshCommonClient {
 
 // Bob client methods
 class ClientB : public ThreshCommonClient {
- public:
-  OPENFHE_DEBUG_FLAG(false);  // set to true to turn on OPENFHE_DEBUG() statements
+public:
+  OPENFHE_DEBUG_FLAG(
+      false); // set to true to turn on OPENFHE_DEBUG() statements
   void RequestRnd1PubKey(void) {
     olc::net::message<ThreshMsgTypes> msg;
     OPENFHE_DEBUG("Client: Requesting Round 1 public key");
@@ -537,4 +538,4 @@ class ClientB : public ThreshCommonClient {
   }
 };
 
-#endif  // THRESH_CLIENT_H
+#endif // THRESH_CLIENT_H

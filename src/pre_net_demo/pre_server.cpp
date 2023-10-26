@@ -33,8 +33,8 @@
 #include <getopt.h>
 
 #include "openfhe.h"
-#include "pre_utils.h"
 #include "pre_server.h"
+#include "pre_utils.h"
 
 using namespace lbcrypto;
 
@@ -57,17 +57,17 @@ int main(int argc, char *argv[]) {
 
   while ((opt = getopt(argc, argv, "p:h")) != -1) {
     switch (opt) {
-      case 'p':
-        port = atoi(optarg);
-        std::cout << "host port " << port << std::endl;
-        break;
-      case 'h':
-      default: /* '?' */
-        std::cerr << "Usage: " << std::endl
-                  << "arguments:" << std::endl
-                  << "  -p port of the server" << std::endl
-                  << "  -h prints this message" << std::endl;
-        std::exit(EXIT_FAILURE);
+    case 'p':
+      port = atoi(optarg);
+      std::cout << "host port " << port << std::endl;
+      break;
+    case 'h':
+    default: /* '?' */
+      std::cerr << "Usage: " << std::endl
+                << "arguments:" << std::endl
+                << "  -p port of the server" << std::endl
+                << "  -h prints this message" << std::endl;
+      std::exit(EXIT_FAILURE);
     }
   }
 

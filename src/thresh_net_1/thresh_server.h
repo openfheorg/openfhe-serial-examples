@@ -7,29 +7,26 @@
 // David Barr, aka javidx9, ©OneLoneCoder 2019, 2020
 
 class ThreshServer : public olc::net::server_interface<ThreshMsgTypes> {
- public:
+public:
   OPENFHE_DEBUG_FLAG(false);
 
   ThreshServer(uint16_t nPort)
       : olc::net::server_interface<ThreshMsgTypes>(nPort),
-        A_Rnd1PubKeyRecd(false),
-        A_evalMultKeyRecd(false),
-        B_Rnd2PublicKeyRecd(false),
-        B_evalMultKeyABRecd(false),
-        B_evalMultKeyBABRecd(false),
-        A_evalMultFinalRecd(false) {
+        A_Rnd1PubKeyRecd(false), A_evalMultKeyRecd(false),
+        B_Rnd2PublicKeyRecd(false), B_evalMultKeyABRecd(false),
+        B_evalMultKeyBABRecd(false), A_evalMultFinalRecd(false) {
     // initialize CC and data structures.
     OPENFHE_DEBUG("[SERVER]: Initialize CC");
     InitializeCC();
   }
 
- protected:
+protected:
   virtual bool OnClientConnect(
       std::shared_ptr<olc::net::connection<ThreshMsgTypes>> client) {
     // add client to the data structures
     // AddClientToDS(client->GetID);
     std::cout << "[SERVER]: Adding client\n";
-	incrementNumClients();
+    incrementNumClients();
     olc::net::message<ThreshMsgTypes> msg;
     msg.header.id = ThreshMsgTypes::ServerAccept;
     OPENFHE_DEBUG("[SERVER]: sending accept");
@@ -46,375 +43,372 @@ class ThreshServer : public olc::net::server_interface<ThreshMsgTypes> {
   }
 
   // Called when a message arrives
-  virtual void OnMessage(
-      std::shared_ptr<olc::net::connection<ThreshMsgTypes>> client,
-      olc::net::message<ThreshMsgTypes>& msg) {
+  virtual void
+  OnMessage(std::shared_ptr<olc::net::connection<ThreshMsgTypes>> client,
+            olc::net::message<ThreshMsgTypes> &msg) {
     switch (msg.header.id) {
-      case ThreshMsgTypes::RequestCC:
-        std::cout << "[" << client->GetID() << "]: RequestCC\n";
-        SendClientCC(client);  // this queues next task
-        break;
+    case ThreshMsgTypes::RequestCC:
+      std::cout << "[" << client->GetID() << "]: RequestCC\n";
+      SendClientCC(client); // this queues next task
+      break;
 
-      case ThreshMsgTypes::SendRnd1PubKey:
+    case ThreshMsgTypes::SendRnd1PubKey:
 
-        std::cout << "[" << client->GetID() << "]: SendRnd1PublicKey\n";
-        // receive the public key from this client, send to other client for
-        // Round 2 key generation.
+      std::cout << "[" << client->GetID() << "]: SendRnd1PublicKey\n";
+      // receive the public key from this client, send to other client for
+      // Round 2 key generation.
 
-        RecvClientAPublicKey(client, msg);
-        {
-          // send acknowledgement
-          olc::net::message<ThreshMsgTypes> ackMsg;
-          ackMsg.header.id = ThreshMsgTypes::AckRnd1PubKey;
-          client->Send(ackMsg);
-        }
+      RecvClientAPublicKey(client, msg);
+      {
+        // send acknowledgement
+        olc::net::message<ThreshMsgTypes> ackMsg;
+        ackMsg.header.id = ThreshMsgTypes::AckRnd1PubKey;
+        client->Send(ackMsg);
+      }
 
-        break;
+      break;
 
-      case ThreshMsgTypes::SendRnd1evalMultKey:
+    case ThreshMsgTypes::SendRnd1evalMultKey:
 
-        std::cout << "[" << client->GetID() << "]: SendRnd1EvalMultKey\n";
-        // receive the evalmult key from this client, send to other client for
-        // Round 2 key generation
+      std::cout << "[" << client->GetID() << "]: SendRnd1EvalMultKey\n";
+      // receive the evalmult key from this client, send to other client for
+      // Round 2 key generation
 
-        RecvClientAevalMultKey(client, msg);
-        {
-          // send acknowledgement
-          olc::net::message<ThreshMsgTypes> ackMsg;
-          ackMsg.header.id = ThreshMsgTypes::AckRnd1evalMultKey;
-          client->Send(ackMsg);
-        }
+      RecvClientAevalMultKey(client, msg);
+      {
+        // send acknowledgement
+        olc::net::message<ThreshMsgTypes> ackMsg;
+        ackMsg.header.id = ThreshMsgTypes::AckRnd1evalMultKey;
+        client->Send(ackMsg);
+      }
 
-        break;
+      break;
 
-      case ThreshMsgTypes::SendRnd1evalSumKeys:
+    case ThreshMsgTypes::SendRnd1evalSumKeys:
 
-        std::cout << "[" << client->GetID() << "]: SendRnd1EvalSumKeys\n";
-        // receive the evalsumkeys from this client,
+      std::cout << "[" << client->GetID() << "]: SendRnd1EvalSumKeys\n";
+      // receive the evalsumkeys from this client,
 
-        RecvClientAevalSumKeys(client, msg);
-        {
-          // send acknowledgement
-          olc::net::message<ThreshMsgTypes> ackMsg;
-          ackMsg.header.id = ThreshMsgTypes::AckRnd1evalSumKeys;
-          client->Send(ackMsg);
-        }
-        break;
+      RecvClientAevalSumKeys(client, msg);
+      {
+        // send acknowledgement
+        olc::net::message<ThreshMsgTypes> ackMsg;
+        ackMsg.header.id = ThreshMsgTypes::AckRnd1evalSumKeys;
+        client->Send(ackMsg);
+      }
+      break;
 
-      case ThreshMsgTypes::SendRnd2SharedKey:
+    case ThreshMsgTypes::SendRnd2SharedKey:
 
-        std::cout << "[" << client->GetID() << "]: SendRnd2SharedKey\n";
-        // receive the public key from this client, this is the shared public
-        // key that the plaintexts will be encrypted with.
+      std::cout << "[" << client->GetID() << "]: SendRnd2SharedKey\n";
+      // receive the public key from this client, this is the shared public
+      // key that the plaintexts will be encrypted with.
 
-        RecvClientBPublicKey(client, msg);
-        {
-          // send acknowledgement
-          olc::net::message<ThreshMsgTypes> ackMsg;
-          ackMsg.header.id = ThreshMsgTypes::AckRnd2SharedKey;
-          client->Send(ackMsg);
-        }
-        break;
+      RecvClientBPublicKey(client, msg);
+      {
+        // send acknowledgement
+        olc::net::message<ThreshMsgTypes> ackMsg;
+        ackMsg.header.id = ThreshMsgTypes::AckRnd2SharedKey;
+        client->Send(ackMsg);
+      }
+      break;
 
-      case ThreshMsgTypes::SendRnd2EvalMultAB:
+    case ThreshMsgTypes::SendRnd2EvalMultAB:
 
-        std::cout << "[" << client->GetID() << "]: SendRnd2EvalMultAB\n";
-        // receive the evalmultAB key from this client, send this to other
-        // client for Round 3 key generation of evalMultFinal
+      std::cout << "[" << client->GetID() << "]: SendRnd2EvalMultAB\n";
+      // receive the evalmultAB key from this client, send this to other
+      // client for Round 3 key generation of evalMultFinal
 
-        RecvClientBevalMultKeyAB(client, msg);
-        {
-          // send acknowledgement
-          olc::net::message<ThreshMsgTypes> ackMsg;
-          ackMsg.header.id = ThreshMsgTypes::AckRnd2EvalMultAB;
-          client->Send(ackMsg);
-        }
-        break;
+      RecvClientBevalMultKeyAB(client, msg);
+      {
+        // send acknowledgement
+        olc::net::message<ThreshMsgTypes> ackMsg;
+        ackMsg.header.id = ThreshMsgTypes::AckRnd2EvalMultAB;
+        client->Send(ackMsg);
+      }
+      break;
 
-      case ThreshMsgTypes::SendRnd2EvalMultBAB:
+    case ThreshMsgTypes::SendRnd2EvalMultBAB:
 
-        std::cout << "[" << client->GetID() << "]: SendRnd2EvalMultBAB\n";
-        // receive the evalmultBAB key from this client, send this to other
-        // client for Round 3 key generation of evalMultFinal
+      std::cout << "[" << client->GetID() << "]: SendRnd2EvalMultBAB\n";
+      // receive the evalmultBAB key from this client, send this to other
+      // client for Round 3 key generation of evalMultFinal
 
-        RecvClientBevalMultKeyBAB(client, msg);
-        {
-          // send acknowledgement
-          olc::net::message<ThreshMsgTypes> ackMsg;
-          ackMsg.header.id = ThreshMsgTypes::AckRnd2EvalMultBAB;
-          client->Send(ackMsg);
-        }
-        break;
+      RecvClientBevalMultKeyBAB(client, msg);
+      {
+        // send acknowledgement
+        olc::net::message<ThreshMsgTypes> ackMsg;
+        ackMsg.header.id = ThreshMsgTypes::AckRnd2EvalMultBAB;
+        client->Send(ackMsg);
+      }
+      break;
 
-      case ThreshMsgTypes::SendRnd2EvalSumKeysJoin:
+    case ThreshMsgTypes::SendRnd2EvalSumKeysJoin:
 
-        std::cout << "[" << client->GetID() << "]: SendRnd2EvalSumKeysJoin\n";
-        // receive the evalsumkeysjoin from this client. This is the final
-        // evaluation key for vector sum
+      std::cout << "[" << client->GetID() << "]: SendRnd2EvalSumKeysJoin\n";
+      // receive the evalsumkeysjoin from this client. This is the final
+      // evaluation key for vector sum
 
-        RecvClientBevalSumKeysJoin(client, msg);
-        {
-          // send acknowledgement
-          olc::net::message<ThreshMsgTypes> ackMsg;
-          ackMsg.header.id = ThreshMsgTypes::AckRnd2EvalSumKeysJoin;
-          client->Send(ackMsg);
-        }
-        break;
+      RecvClientBevalSumKeysJoin(client, msg);
+      {
+        // send acknowledgement
+        olc::net::message<ThreshMsgTypes> ackMsg;
+        ackMsg.header.id = ThreshMsgTypes::AckRnd2EvalSumKeysJoin;
+        client->Send(ackMsg);
+      }
+      break;
 
-      case ThreshMsgTypes::SendRnd3EvalMultFinal:
+    case ThreshMsgTypes::SendRnd3EvalMultFinal:
 
-        std::cout << "[" << client->GetID() << "]: SendRnd3EvalMultFinal\n";
-        // receive the evalmultfinal key from this client, this is the final
-        // evaluation key for multiplication on ciphertexts
+      std::cout << "[" << client->GetID() << "]: SendRnd3EvalMultFinal\n";
+      // receive the evalmultfinal key from this client, this is the final
+      // evaluation key for multiplication on ciphertexts
 
-        RecvClientAevalMultFinal(client, msg);
-        {
-          // send acknowledgement
-          olc::net::message<ThreshMsgTypes> ackMsg;
-          ackMsg.header.id = ThreshMsgTypes::AckRnd3EvalMultFinal;
-          client->Send(ackMsg);
-        }
-        break;
+      RecvClientAevalMultFinal(client, msg);
+      {
+        // send acknowledgement
+        olc::net::message<ThreshMsgTypes> ackMsg;
+        ackMsg.header.id = ThreshMsgTypes::AckRnd3EvalMultFinal;
+        client->Send(ackMsg);
+      }
+      break;
 
-      case ThreshMsgTypes::RequestRnd1PubKey:
-        std::cout << "[" << client->GetID() << "]: RequestRnd1PubKey\n";
-        SendClientRnd1PubKey(client);  // this queues next task
-        break;
+    case ThreshMsgTypes::RequestRnd1PubKey:
+      std::cout << "[" << client->GetID() << "]: RequestRnd1PubKey\n";
+      SendClientRnd1PubKey(client); // this queues next task
+      break;
 
-      case ThreshMsgTypes::RequestRnd1evalMultKey:
-        std::cout << "[" << client->GetID() << "]: RequestRnd1evalMultKey\n";
-        SendClientRnd1evalMultKey(client);  // this queues next task
-        break;
+    case ThreshMsgTypes::RequestRnd1evalMultKey:
+      std::cout << "[" << client->GetID() << "]: RequestRnd1evalMultKey\n";
+      SendClientRnd1evalMultKey(client); // this queues next task
+      break;
 
-      case ThreshMsgTypes::RequestRnd1evalSumKeys:
-        std::cout << "[" << client->GetID() << "]: RequestRnd1evalSumKeys\n";
-        SendClientRnd1evalSumKeys(client);  // this queues next task
-        break;
+    case ThreshMsgTypes::RequestRnd1evalSumKeys:
+      std::cout << "[" << client->GetID() << "]: RequestRnd1evalSumKeys\n";
+      SendClientRnd1evalSumKeys(client); // this queues next task
+      break;
 
-      case ThreshMsgTypes::RequestRnd2SharedKey:
-        std::cout << "[" << client->GetID() << "]: RequestRnd2SharedKey\n";
-        SendClientRnd2PubKey(client);  // this queues next task
-        break;
+    case ThreshMsgTypes::RequestRnd2SharedKey:
+      std::cout << "[" << client->GetID() << "]: RequestRnd2SharedKey\n";
+      SendClientRnd2PubKey(client); // this queues next task
+      break;
 
-      case ThreshMsgTypes::RequestRnd2EvalMultAB:
-        std::cout << "[" << client->GetID() << "]: RequestRnd2EvalMultAB\n";
-        SendClientRnd2evalMultKeyAB(client);  // this queues next task
-        break;
+    case ThreshMsgTypes::RequestRnd2EvalMultAB:
+      std::cout << "[" << client->GetID() << "]: RequestRnd2EvalMultAB\n";
+      SendClientRnd2evalMultKeyAB(client); // this queues next task
+      break;
 
-      case ThreshMsgTypes::RequestRnd2EvalMultBAB:
-        std::cout << "[" << client->GetID() << "]: RequestRnd2EvalMultBAB\n";
-        SendClientRnd2evalMultKeyBAB(client);  // this queues next task
-        break;
+    case ThreshMsgTypes::RequestRnd2EvalMultBAB:
+      std::cout << "[" << client->GetID() << "]: RequestRnd2EvalMultBAB\n";
+      SendClientRnd2evalMultKeyBAB(client); // this queues next task
+      break;
 
-      case ThreshMsgTypes::RequestRnd2EvalSumKeysJoin:
-        std::cout << "[" << client->GetID()
-                  << "]: RequestRnd2EvalSumKeysJoin\n";
-        SendClientRnd2evalSumKeysJoin(client);  // this queues next task
-        break;
+    case ThreshMsgTypes::RequestRnd2EvalSumKeysJoin:
+      std::cout << "[" << client->GetID() << "]: RequestRnd2EvalSumKeysJoin\n";
+      SendClientRnd2evalSumKeysJoin(client); // this queues next task
+      break;
 
-      case ThreshMsgTypes::RequestRnd3EvalMultFinal:
-        std::cout << "[" << client->GetID() << "]: RequestRnd3evalMultFinal\n";
-        SendClientRnd3evalMultFinal(client);  // this queues next task
-        break;
+    case ThreshMsgTypes::RequestRnd3EvalMultFinal:
+      std::cout << "[" << client->GetID() << "]: RequestRnd3evalMultFinal\n";
+      SendClientRnd3evalMultFinal(client); // this queues next task
+      break;
 
-      case ThreshMsgTypes::SendCT1:
+    case ThreshMsgTypes::SendCT1:
 
-        std::cout << "[" << client->GetID() << "]: SendCT1\n";
-        // receive ciphertext
-        // store it in the client's data structure.
-        RecvClientCT(client, msg);
-        {
-          // send acknowledgement
-          PROFILELOG("inside recvclientct1");
-          olc::net::message<ThreshMsgTypes> ackMsg;
-          ackMsg.header.id = ThreshMsgTypes::AckCT1;
-          client->Send(ackMsg);
-        }
-        break;
+      std::cout << "[" << client->GetID() << "]: SendCT1\n";
+      // receive ciphertext
+      // store it in the client's data structure.
+      RecvClientCT(client, msg);
+      {
+        // send acknowledgement
+        PROFILELOG("inside recvclientct1");
+        olc::net::message<ThreshMsgTypes> ackMsg;
+        ackMsg.header.id = ThreshMsgTypes::AckCT1;
+        client->Send(ackMsg);
+      }
+      break;
 
-      case ThreshMsgTypes::SendCT2:
+    case ThreshMsgTypes::SendCT2:
 
-        std::cout << "[" << client->GetID() << "]: SendCT2\n";
-        // receive ciphertext
-        // store it in the client's data structure.
-        RecvClientCT(client, msg);
-        {
-          // send acknowledgement
-          olc::net::message<ThreshMsgTypes> ackMsg;
-          ackMsg.header.id = ThreshMsgTypes::AckCT2;
-          client->Send(ackMsg);
-        }
-        break;
+      std::cout << "[" << client->GetID() << "]: SendCT2\n";
+      // receive ciphertext
+      // store it in the client's data structure.
+      RecvClientCT(client, msg);
+      {
+        // send acknowledgement
+        olc::net::message<ThreshMsgTypes> ackMsg;
+        ackMsg.header.id = ThreshMsgTypes::AckCT2;
+        client->Send(ackMsg);
+      }
+      break;
 
-      case ThreshMsgTypes::SendCT3:
+    case ThreshMsgTypes::SendCT3:
 
-        std::cout << "[" << client->GetID() << "]: SendCT3\n";
-        // receive ciphertext
-        // store it in the client's data structure.
-        RecvClientCT(client, msg);
-        {
-          // send acknowledgement
-          olc::net::message<ThreshMsgTypes> ackMsg;
-          ackMsg.header.id = ThreshMsgTypes::AckCT3;
-          client->Send(ackMsg);
-        }
-        break;
+      std::cout << "[" << client->GetID() << "]: SendCT3\n";
+      // receive ciphertext
+      // store it in the client's data structure.
+      RecvClientCT(client, msg);
+      {
+        // send acknowledgement
+        olc::net::message<ThreshMsgTypes> ackMsg;
+        ackMsg.header.id = ThreshMsgTypes::AckCT3;
+        client->Send(ackMsg);
+      }
+      break;
 
-      case ThreshMsgTypes::RequestCT1:
-        std::cout << "[" << client->GetID() << "]: RequestCT1\n";
-        SendClientCT(client, 0);  // this queues next task
-        break;
+    case ThreshMsgTypes::RequestCT1:
+      std::cout << "[" << client->GetID() << "]: RequestCT1\n";
+      SendClientCT(client, 0); // this queues next task
+      break;
 
-      case ThreshMsgTypes::RequestCT2:
-        std::cout << "[" << client->GetID() << "]: RequestCT2\n";
-        SendClientCT(client, 1);  // this queues next task
-        break;
+    case ThreshMsgTypes::RequestCT2:
+      std::cout << "[" << client->GetID() << "]: RequestCT2\n";
+      SendClientCT(client, 1); // this queues next task
+      break;
 
-      case ThreshMsgTypes::RequestCT3:
-        std::cout << "[" << client->GetID() << "]: RequestCT3\n";
-        SendClientCT(client, 2);  // this queues next task
-        break;
+    case ThreshMsgTypes::RequestCT3:
+      std::cout << "[" << client->GetID() << "]: RequestCT3\n";
+      SendClientCT(client, 2); // this queues next task
+      break;
 
-      case ThreshMsgTypes::RequestDecryptLeadAdd:
-        std::cout << "[" << client->GetID() << "]: RequestDecryptLeadAdd\n";
-        SendClientDecryptLeadAdd(client);
-        break;
+    case ThreshMsgTypes::RequestDecryptLeadAdd:
+      std::cout << "[" << client->GetID() << "]: RequestDecryptLeadAdd\n";
+      SendClientDecryptLeadAdd(client);
+      break;
 
-      case ThreshMsgTypes::RequestDecryptLeadMult:
-        std::cout << "[" << client->GetID() << "]: RequestDecryptLeadMult\n";
-        SendClientDecryptLeadMult(client);
-        break;
+    case ThreshMsgTypes::RequestDecryptLeadMult:
+      std::cout << "[" << client->GetID() << "]: RequestDecryptLeadMult\n";
+      SendClientDecryptLeadMult(client);
+      break;
 
-      case ThreshMsgTypes::RequestDecryptLeadSum:
-        std::cout << "[" << client->GetID() << "]: RequestDecryptLeadSum\n";
-        SendClientDecryptLeadSum(client);
-        break;
+    case ThreshMsgTypes::RequestDecryptLeadSum:
+      std::cout << "[" << client->GetID() << "]: RequestDecryptLeadSum\n";
+      SendClientDecryptLeadSum(client);
+      break;
 
-      case ThreshMsgTypes::RequestDecryptMainAdd:
-        std::cout << "[" << client->GetID() << "]: RequestDecryptMainAdd\n";
-        SendClientDecryptMainAdd(client);
-        break;
+    case ThreshMsgTypes::RequestDecryptMainAdd:
+      std::cout << "[" << client->GetID() << "]: RequestDecryptMainAdd\n";
+      SendClientDecryptMainAdd(client);
+      break;
 
-      case ThreshMsgTypes::RequestDecryptMainMult:
-        std::cout << "[" << client->GetID() << "]: RequestDecryptMainMult\n";
-        SendClientDecryptMainMult(client);
-        break;
+    case ThreshMsgTypes::RequestDecryptMainMult:
+      std::cout << "[" << client->GetID() << "]: RequestDecryptMainMult\n";
+      SendClientDecryptMainMult(client);
+      break;
 
-      case ThreshMsgTypes::RequestDecryptMainSum:
-        std::cout << "[" << client->GetID() << "]: RequestDecryptMainSum\n";
-        SendClientDecryptMainSum(client);
-        break;
+    case ThreshMsgTypes::RequestDecryptMainSum:
+      std::cout << "[" << client->GetID() << "]: RequestDecryptMainSum\n";
+      SendClientDecryptMainSum(client);
+      break;
 
-      case ThreshMsgTypes::SendDecryptPartialMainAdd:
+    case ThreshMsgTypes::SendDecryptPartialMainAdd:
 
-        std::cout << "[" << client->GetID() << "]: SendDecryptPartialMainAdd\n";
-        // receive ciphertext
-        // store it in the ClientB's data structure.
-        RecvClientPartialMainAddCT(client, msg);
-        {
-          // send acknowledgement
-          olc::net::message<ThreshMsgTypes> ackMsg;
-          ackMsg.header.id = ThreshMsgTypes::AckPartialMainAdd;
-          client->Send(ackMsg);
-        }
-        break;
-      case ThreshMsgTypes::SendDecryptPartialLeadAdd:
+      std::cout << "[" << client->GetID() << "]: SendDecryptPartialMainAdd\n";
+      // receive ciphertext
+      // store it in the ClientB's data structure.
+      RecvClientPartialMainAddCT(client, msg);
+      {
+        // send acknowledgement
+        olc::net::message<ThreshMsgTypes> ackMsg;
+        ackMsg.header.id = ThreshMsgTypes::AckPartialMainAdd;
+        client->Send(ackMsg);
+      }
+      break;
+    case ThreshMsgTypes::SendDecryptPartialLeadAdd:
 
-        std::cout << "[" << client->GetID() << "]: SendDecryptPartialLeadAdd\n";
-        // receive ciphertext
-        // store it in the ClientA's data structure.
-        RecvClientPartialLeadAddCT(client, msg);
-        {
-          // send acknowledgement
-          olc::net::message<ThreshMsgTypes> ackMsg;
-          ackMsg.header.id = ThreshMsgTypes::AckPartialLeadAdd;
-          client->Send(ackMsg);
-        }
-        break;
+      std::cout << "[" << client->GetID() << "]: SendDecryptPartialLeadAdd\n";
+      // receive ciphertext
+      // store it in the ClientA's data structure.
+      RecvClientPartialLeadAddCT(client, msg);
+      {
+        // send acknowledgement
+        olc::net::message<ThreshMsgTypes> ackMsg;
+        ackMsg.header.id = ThreshMsgTypes::AckPartialLeadAdd;
+        client->Send(ackMsg);
+      }
+      break;
 
-      case ThreshMsgTypes::SendDecryptPartialMainMult:
+    case ThreshMsgTypes::SendDecryptPartialMainMult:
 
-        std::cout << "[" << client->GetID()
-                  << "]: SendDecryptPartialMainMult\n";
-        // receive ciphertext
-        // store it in the ClientB's data structure.
-        RecvClientPartialMainMultCT(client, msg);
-        {
-          // send acknowledgement
-          olc::net::message<ThreshMsgTypes> ackMsg;
-          ackMsg.header.id = ThreshMsgTypes::AckPartialMainMult;
-          client->Send(ackMsg);
-        }
-        break;
+      std::cout << "[" << client->GetID() << "]: SendDecryptPartialMainMult\n";
+      // receive ciphertext
+      // store it in the ClientB's data structure.
+      RecvClientPartialMainMultCT(client, msg);
+      {
+        // send acknowledgement
+        olc::net::message<ThreshMsgTypes> ackMsg;
+        ackMsg.header.id = ThreshMsgTypes::AckPartialMainMult;
+        client->Send(ackMsg);
+      }
+      break;
 
-      case ThreshMsgTypes::SendDecryptPartialLeadMult:
+    case ThreshMsgTypes::SendDecryptPartialLeadMult:
 
-        std::cout << "[" << client->GetID()
-                  << "]: SendDecryptPartialLeadMult\n";
-        // receive ciphertext
-        // store it in the ClientA's data structure.
-        RecvClientPartialLeadMultCT(client, msg);
-        {
-          // send acknowledgement
-          olc::net::message<ThreshMsgTypes> ackMsg;
-          ackMsg.header.id = ThreshMsgTypes::AckPartialLeadMult;
-          client->Send(ackMsg);
-        }
-        break;
+      std::cout << "[" << client->GetID() << "]: SendDecryptPartialLeadMult\n";
+      // receive ciphertext
+      // store it in the ClientA's data structure.
+      RecvClientPartialLeadMultCT(client, msg);
+      {
+        // send acknowledgement
+        olc::net::message<ThreshMsgTypes> ackMsg;
+        ackMsg.header.id = ThreshMsgTypes::AckPartialLeadMult;
+        client->Send(ackMsg);
+      }
+      break;
 
-      case ThreshMsgTypes::SendDecryptPartialMainSum:
+    case ThreshMsgTypes::SendDecryptPartialMainSum:
 
-        std::cout << "[" << client->GetID() << "]: SendDecryptPartialMainSum\n";
-        // receive ciphertext
-        // store it in the ClientB's data structure.
-        RecvClientPartialMainSumCT(client, msg);
-        {
-          // send acknowledgement
-          olc::net::message<ThreshMsgTypes> ackMsg;
-          ackMsg.header.id = ThreshMsgTypes::AckPartialMainSum;
-          client->Send(ackMsg);
-        }
-        break;
+      std::cout << "[" << client->GetID() << "]: SendDecryptPartialMainSum\n";
+      // receive ciphertext
+      // store it in the ClientB's data structure.
+      RecvClientPartialMainSumCT(client, msg);
+      {
+        // send acknowledgement
+        olc::net::message<ThreshMsgTypes> ackMsg;
+        ackMsg.header.id = ThreshMsgTypes::AckPartialMainSum;
+        client->Send(ackMsg);
+      }
+      break;
 
-      case ThreshMsgTypes::SendDecryptPartialLeadSum:
+    case ThreshMsgTypes::SendDecryptPartialLeadSum:
 
-        std::cout << "[" << client->GetID() << "]: SendDecryptPartialLeadSum\n";
-        // receive ciphertext
-        // store it in the ClientA's data structure.
-        RecvClientPartialLeadSumCT(client, msg);
-        {
-          // send acknowledgement
-          olc::net::message<ThreshMsgTypes> ackMsg;
-          ackMsg.header.id = ThreshMsgTypes::AckPartialLeadSum;
-          client->Send(ackMsg);
-        }
-        break;
-	case ThreshMsgTypes::DisconnectClient:
-	  
-	  std::cout << "[" << client->GetID() << "]: DisconnectClient\n";
-	  decrementNumClients();
-	  exitIfNoClients();
-	  break;
-	  
-	default:
-	  std::cout << "[" << client->GetID() << "]: unprocessed message\n";
+      std::cout << "[" << client->GetID() << "]: SendDecryptPartialLeadSum\n";
+      // receive ciphertext
+      // store it in the ClientA's data structure.
+      RecvClientPartialLeadSumCT(client, msg);
+      {
+        // send acknowledgement
+        olc::net::message<ThreshMsgTypes> ackMsg;
+        ackMsg.header.id = ThreshMsgTypes::AckPartialLeadSum;
+        client->Send(ackMsg);
+      }
+      break;
+    case ThreshMsgTypes::DisconnectClient:
+
+      std::cout << "[" << client->GetID() << "]: DisconnectClient\n";
+      decrementNumClients();
+      exitIfNoClients();
+      break;
+
+    default:
+      std::cout << "[" << client->GetID() << "]: unprocessed message\n";
     }
   }
 
   void InitializeCC(void) {
     PROFILELOG("[SERVER] Initializing");
-    TimeVar t;  // time benchmarking variables
+    TimeVar t; // time benchmarking variables
     PROFILELOG("[SERVER] Generating crypto context");
     TIC(t);
     usint init_size = 4;
-	usint batchSize = 16;
+    usint batchSize = 16;
 
     CCParams<CryptoContextCKKSRNS> parameters;
-    parameters.SetMultiplicativeDepth(init_size-1);
+    parameters.SetMultiplicativeDepth(init_size - 1);
     parameters.SetScalingModSize(50);
     parameters.SetBatchSize(batchSize);
 
-	m_serverCC = GenCryptoContext(parameters);
+    m_serverCC = GenCryptoContext(parameters);
     // enable features that you wish to use
     m_serverCC->Enable(PKE);
     m_serverCC->Enable(KEYSWITCH);
@@ -425,16 +419,17 @@ class ThreshServer : public olc::net::server_interface<ThreshMsgTypes> {
     PROFILELOG("[SERVER]: elapsed time " << TOC_MS(t) << "msec.");
   }
 
-  void SendClientCC(
-      std::shared_ptr<olc::net::connection<ThreshMsgTypes>> client) {
+  void
+  SendClientCC(std::shared_ptr<olc::net::connection<ThreshMsgTypes>> client) {
     std::string s;
     std::ostringstream os(s);
-    OPENFHE_DEBUG("[SERVER]: sending cryptocontext to [" << client->GetID() << "]:");
+    OPENFHE_DEBUG("[SERVER]: sending cryptocontext to [" << client->GetID()
+                                                         << "]:");
     Serial::Serialize(m_serverCC, os, SerType::BINARY);
 
     olc::net::message<ThreshMsgTypes> msg;
     msg.header.id = ThreshMsgTypes::SendCC;
-    msg << os.str();  // push the string onto the message.
+    msg << os.str(); // push the string onto the message.
 
     client->Send(msg);
   }
@@ -453,11 +448,11 @@ class ThreshServer : public olc::net::server_interface<ThreshMsgTypes> {
     }
 
     OPENFHE_DEBUG("[SERVER]: sending Round 1 Public Key to [" << client->GetID()
-                                                      << "]:");
+                                                              << "]:");
     Serial::Serialize(A_Rnd1PublicKey, os, SerType::BINARY);
 
     msg.header.id = ThreshMsgTypes::SendRnd1PubKey;
-    msg << os.str();  // push the string onto the message.
+    msg << os.str(); // push the string onto the message.
 
     client->Send(msg);
   }
@@ -476,12 +471,12 @@ class ThreshServer : public olc::net::server_interface<ThreshMsgTypes> {
       return;
     }
 
-    OPENFHE_DEBUG("[SERVER]: sending Round 1 EvalMultKey to [" << client->GetID()
-                                                       << "]:");
+    OPENFHE_DEBUG("[SERVER]: sending Round 1 EvalMultKey to ["
+                  << client->GetID() << "]:");
     Serial::Serialize(A_evalMultKey, os, SerType::BINARY);
 
     msg.header.id = ThreshMsgTypes::SendRnd1evalMultKey;
-    msg << os.str();  // push the string onto the message.
+    msg << os.str(); // push the string onto the message.
 
     client->Send(msg);
   }
@@ -500,12 +495,12 @@ class ThreshServer : public olc::net::server_interface<ThreshMsgTypes> {
       return;
     }
 
-    OPENFHE_DEBUG("[SERVER]: sending Round 1 EvalSumKeys to [" << client->GetID()
-                                                       << "]:");
+    OPENFHE_DEBUG("[SERVER]: sending Round 1 EvalSumKeys to ["
+                  << client->GetID() << "]:");
     Serial::Serialize(A_evalSumKeys, os, SerType::BINARY);
 
     msg.header.id = ThreshMsgTypes::SendRnd1evalSumKeys;
-    msg << os.str();  // push the string onto the message.
+    msg << os.str(); // push the string onto the message.
 
     client->Send(msg);
   }
@@ -524,11 +519,11 @@ class ThreshServer : public olc::net::server_interface<ThreshMsgTypes> {
     }
 
     OPENFHE_DEBUG("[SERVER]: sending Round 2 Public Key to [" << client->GetID()
-                                                      << "]:");
+                                                              << "]:");
     Serial::Serialize(B_Rnd2PublicKey, os, SerType::BINARY);
 
     msg.header.id = ThreshMsgTypes::SendRnd2SharedKey;
-    msg << os.str();  // push the string onto the message.
+    msg << os.str(); // push the string onto the message.
 
     client->Send(msg);
   }
@@ -546,12 +541,12 @@ class ThreshServer : public olc::net::server_interface<ThreshMsgTypes> {
       return;
     }
 
-    OPENFHE_DEBUG("[SERVER]: sending Round 2 EvalMultKeyAB to [" << client->GetID()
-                                                         << "]:");
+    OPENFHE_DEBUG("[SERVER]: sending Round 2 EvalMultKeyAB to ["
+                  << client->GetID() << "]:");
     Serial::Serialize(B_evalMultKeyAB, os, SerType::BINARY);
 
     msg.header.id = ThreshMsgTypes::SendRnd2EvalMultAB;
-    msg << os.str();  // push the string onto the message.
+    msg << os.str(); // push the string onto the message.
 
     client->Send(msg);
   }
@@ -569,12 +564,12 @@ class ThreshServer : public olc::net::server_interface<ThreshMsgTypes> {
       return;
     }
 
-    OPENFHE_DEBUG("[SERVER]: sending Round 2 EvalMultKeyBAB to [" << client->GetID()
-                                                          << "]:");
+    OPENFHE_DEBUG("[SERVER]: sending Round 2 EvalMultKeyBAB to ["
+                  << client->GetID() << "]:");
     Serial::Serialize(B_evalMultKeyBAB, os, SerType::BINARY);
 
     msg.header.id = ThreshMsgTypes::SendRnd2EvalMultBAB;
-    msg << os.str();  // push the string onto the message.
+    msg << os.str(); // push the string onto the message.
 
     client->Send(msg);
   }
@@ -592,12 +587,12 @@ class ThreshServer : public olc::net::server_interface<ThreshMsgTypes> {
       return;
     }
 
-    OPENFHE_DEBUG("[SERVER]: sending Round 2 EvalSumKeysJoin to [" << client->GetID()
-                                                           << "]:");
+    OPENFHE_DEBUG("[SERVER]: sending Round 2 EvalSumKeysJoin to ["
+                  << client->GetID() << "]:");
     Serial::Serialize(B_evalSumKeysJoin, os, SerType::BINARY);
 
     msg.header.id = ThreshMsgTypes::SendRnd2EvalSumKeysJoin;
-    msg << os.str();  // push the string onto the message.
+    msg << os.str(); // push the string onto the message.
 
     client->Send(msg);
   }
@@ -615,18 +610,19 @@ class ThreshServer : public olc::net::server_interface<ThreshMsgTypes> {
       return;
     }
 
-    OPENFHE_DEBUG("[SERVER]: sending Round 3 evalMultFinal to [" << client->GetID()
-                                                         << "]:");
+    OPENFHE_DEBUG("[SERVER]: sending Round 3 evalMultFinal to ["
+                  << client->GetID() << "]:");
     Serial::Serialize(A_evalMultFinal, os, SerType::BINARY);
 
     msg.header.id = ThreshMsgTypes::SendRnd3EvalMultFinal;
-    msg << os.str();  // push the string onto the message.
+    msg << os.str(); // push the string onto the message.
 
     client->Send(msg);
   }
 
-  void SendClientCT(
-      std::shared_ptr<olc::net::connection<ThreshMsgTypes>> client, int num) {
+  void
+  SendClientCT(std::shared_ptr<olc::net::connection<ThreshMsgTypes>> client,
+               int num) {
     std::string s;
     std::ostringstream os(s);
     olc::net::message<ThreshMsgTypes> msg;
@@ -648,7 +644,8 @@ class ThreshServer : public olc::net::server_interface<ThreshMsgTypes> {
       return;
     }
 
-    OPENFHE_DEBUG("[SERVER]: sending CT" << num << " to [" << client->GetID() << "]:");
+    OPENFHE_DEBUG("[SERVER]: sending CT" << num << " to [" << client->GetID()
+                                         << "]:");
     Serial::Serialize(B_CipherTexts[num], os, SerType::BINARY);
 
     if (num == 0) {
@@ -658,14 +655,14 @@ class ThreshServer : public olc::net::server_interface<ThreshMsgTypes> {
     } else if (num == 2) {
       msg.header.id = ThreshMsgTypes::SendCT3;
     }
-    msg << os.str();  // push the string onto the message.
+    msg << os.str(); // push the string onto the message.
 
     client->Send(msg);
   }
 
   void RecvClientAPublicKey(
       std::shared_ptr<olc::net::connection<ThreshMsgTypes>> client,
-      olc::net::message<ThreshMsgTypes>& msg) {
+      olc::net::message<ThreshMsgTypes> &msg) {
     // receive the public key from this client,
     // and store it in the data structure
     // note a more complex server could store the key in a
@@ -689,7 +686,7 @@ class ThreshServer : public olc::net::server_interface<ThreshMsgTypes> {
 
   void RecvClientAevalMultKey(
       std::shared_ptr<olc::net::connection<ThreshMsgTypes>> client,
-      olc::net::message<ThreshMsgTypes>& msg) {
+      olc::net::message<ThreshMsgTypes> &msg) {
     // receive the evalmult key from this client,
     // and store it in the data structure
     // note a more complex server could store the key in a
@@ -713,7 +710,7 @@ class ThreshServer : public olc::net::server_interface<ThreshMsgTypes> {
 
   void RecvClientAevalSumKeys(
       std::shared_ptr<olc::net::connection<ThreshMsgTypes>> client,
-      olc::net::message<ThreshMsgTypes>& msg) {
+      olc::net::message<ThreshMsgTypes> &msg) {
     // receive the evalsumkeys from this client,
     // and store it in the data structure
     // note a more complex server could store the key in a
@@ -736,14 +733,15 @@ class ThreshServer : public olc::net::server_interface<ThreshMsgTypes> {
 
   void RecvClientBPublicKey(
       std::shared_ptr<olc::net::connection<ThreshMsgTypes>> client,
-      olc::net::message<ThreshMsgTypes>& msg) {
+      olc::net::message<ThreshMsgTypes> &msg) {
     // receive the public key from this client,
     // and store it in the data structure
     // note a more complex server could store the key in a
     // data structure indexed by the client->GetID()
     unsigned int msgSize(msg.body.size());
 
-    OPENFHE_DEBUG("[SERVER] read Round 2 public key of " << msgSize << " bytes");
+    OPENFHE_DEBUG("[SERVER] read Round 2 public key of " << msgSize
+                                                         << " bytes");
     OPENFHE_DEBUG("[SERVER]: msg.size() " << msg.size());
     OPENFHE_DEBUG("[SERVER]: msg.body.size() " << msg.body.size());
     // make an istringstream from the message
@@ -760,14 +758,15 @@ class ThreshServer : public olc::net::server_interface<ThreshMsgTypes> {
 
   void RecvClientBevalMultKeyAB(
       std::shared_ptr<olc::net::connection<ThreshMsgTypes>> client,
-      olc::net::message<ThreshMsgTypes>& msg) {
+      olc::net::message<ThreshMsgTypes> &msg) {
     // receive the evalMultAB key from this client,
     // and store it in the data structure
     // note a more complex server could store the key in a
     // data structure indexed by the client->GetID()
     unsigned int msgSize(msg.body.size());
 
-    OPENFHE_DEBUG("[SERVER] read Round 2 evalMultKeyAB key of " << msgSize << " bytes");
+    OPENFHE_DEBUG("[SERVER] read Round 2 evalMultKeyAB key of " << msgSize
+                                                                << " bytes");
     OPENFHE_DEBUG("[SERVER]: msg.size() " << msg.size());
     OPENFHE_DEBUG("[SERVER]: msg.body.size() " << msg.body.size());
     // make an istringstream from the message
@@ -784,14 +783,15 @@ class ThreshServer : public olc::net::server_interface<ThreshMsgTypes> {
 
   void RecvClientBevalMultKeyBAB(
       std::shared_ptr<olc::net::connection<ThreshMsgTypes>> client,
-      olc::net::message<ThreshMsgTypes>& msg) {
+      olc::net::message<ThreshMsgTypes> &msg) {
     // receive the evalMultBAB key from this client,
     // and store it in the data structure
     // note a more complex server could store the key in a
     // data structure indexed by the client->GetID()
     unsigned int msgSize(msg.body.size());
 
-    OPENFHE_DEBUG("[SERVER] read Round 2 evalMultKeyBAB of " << msgSize << " bytes");
+    OPENFHE_DEBUG("[SERVER] read Round 2 evalMultKeyBAB of " << msgSize
+                                                             << " bytes");
     OPENFHE_DEBUG("[SERVER]: msg.size() " << msg.size());
     OPENFHE_DEBUG("[SERVER]: msg.body.size() " << msg.body.size());
     // make an istringstream from the message
@@ -808,14 +808,15 @@ class ThreshServer : public olc::net::server_interface<ThreshMsgTypes> {
 
   void RecvClientBevalSumKeysJoin(
       std::shared_ptr<olc::net::connection<ThreshMsgTypes>> client,
-      olc::net::message<ThreshMsgTypes>& msg) {
+      olc::net::message<ThreshMsgTypes> &msg) {
     // receive the evalsumkeysjoin from this client,
     // and store it in the data structure
     // note a more complex server could store the key in a
     // data structure indexed by the client->GetID()
     unsigned int msgSize(msg.body.size());
 
-    OPENFHE_DEBUG("[SERVER] read Round 2 evalSumKeysJoin of " << msgSize << " bytes");
+    OPENFHE_DEBUG("[SERVER] read Round 2 evalSumKeysJoin of " << msgSize
+                                                              << " bytes");
     OPENFHE_DEBUG("[SERVER]: msg.size() " << msg.size());
     OPENFHE_DEBUG("[SERVER]: msg.body.size() " << msg.body.size());
     // make an istringstream from the message
@@ -831,14 +832,15 @@ class ThreshServer : public olc::net::server_interface<ThreshMsgTypes> {
 
   void RecvClientAevalMultFinal(
       std::shared_ptr<olc::net::connection<ThreshMsgTypes>> client,
-      olc::net::message<ThreshMsgTypes>& msg) {
+      olc::net::message<ThreshMsgTypes> &msg) {
     // receive the evalMultFinal key from this client,
     // and store it in the data structure
     // note a more complex server could store the key in a
     // data structure indexed by the client->GetID()
     unsigned int msgSize(msg.body.size());
 
-    OPENFHE_DEBUG("[SERVER] read Round 3 evalMultFinal of " << msgSize << " bytes");
+    OPENFHE_DEBUG("[SERVER] read Round 3 evalMultFinal of " << msgSize
+                                                            << " bytes");
     OPENFHE_DEBUG("[SERVER]: msg.size() " << msg.size());
     OPENFHE_DEBUG("[SERVER]: msg.body.size() " << msg.body.size());
     // make an istringstream from the message
@@ -853,9 +855,9 @@ class ThreshServer : public olc::net::server_interface<ThreshMsgTypes> {
     assert(is.good());
   }
 
-  void RecvClientCT(
-      std::shared_ptr<olc::net::connection<ThreshMsgTypes>> client,
-      olc::net::message<ThreshMsgTypes>& msg) {
+  void
+  RecvClientCT(std::shared_ptr<olc::net::connection<ThreshMsgTypes>> client,
+               olc::net::message<ThreshMsgTypes> &msg) {
     // receive the CT from this client,
     // and store it in the data structure with this client as key
     // note a more complex server could store the key in a
@@ -895,12 +897,12 @@ class ThreshServer : public olc::net::server_interface<ThreshMsgTypes> {
 
     std::string s;
     std::ostringstream os(s);
-    OPENFHE_DEBUG("[SERVER]: sending partial decrypt main mult to [" << client->GetID()
-                                                             << "]:");
+    OPENFHE_DEBUG("[SERVER]: sending partial decrypt main mult to ["
+                  << client->GetID() << "]:");
     Serial::Serialize(Partial_MainMult, os, SerType::BINARY);
 
     msg.header.id = ThreshMsgTypes::SendDecryptMainMult;
-    msg << os.str();  // push the string onto the message.
+    msg << os.str(); // push the string onto the message.
     OPENFHE_DEBUG("[SERVER]: msg.size() " << msg.size());
     OPENFHE_DEBUG("[SERVER]: msg.body.size() " << msg.body.size());
     client->Send(msg);
@@ -920,12 +922,12 @@ class ThreshServer : public olc::net::server_interface<ThreshMsgTypes> {
 
     std::string s;
     std::ostringstream os(s);
-    OPENFHE_DEBUG("[SERVER]: sending partial decrypt lead mult to [" << client->GetID()
-                                                             << "]:");
+    OPENFHE_DEBUG("[SERVER]: sending partial decrypt lead mult to ["
+                  << client->GetID() << "]:");
     Serial::Serialize(Partial_LeadMult, os, SerType::BINARY);
 
     msg.header.id = ThreshMsgTypes::SendDecryptLeadMult;
-    msg << os.str();  // push the string onto the message.
+    msg << os.str(); // push the string onto the message.
     OPENFHE_DEBUG("[SERVER]: msg.size() " << msg.size());
     OPENFHE_DEBUG("[SERVER]: msg.body.size() " << msg.body.size());
     client->Send(msg);
@@ -945,12 +947,12 @@ class ThreshServer : public olc::net::server_interface<ThreshMsgTypes> {
 
     std::string s;
     std::ostringstream os(s);
-    OPENFHE_DEBUG("[SERVER]: sending partial decrypt main add to [" << client->GetID()
-                                                            << "]:");
+    OPENFHE_DEBUG("[SERVER]: sending partial decrypt main add to ["
+                  << client->GetID() << "]:");
     Serial::Serialize(Partial_MainAdd, os, SerType::BINARY);
 
     msg.header.id = ThreshMsgTypes::SendDecryptMainAdd;
-    msg << os.str();  // push the string onto the message.
+    msg << os.str(); // push the string onto the message.
     OPENFHE_DEBUG("[SERVER]: msg.size() " << msg.size());
     OPENFHE_DEBUG("[SERVER]: msg.body.size() " << msg.body.size());
     client->Send(msg);
@@ -970,12 +972,12 @@ class ThreshServer : public olc::net::server_interface<ThreshMsgTypes> {
 
     std::string s;
     std::ostringstream os(s);
-    OPENFHE_DEBUG("[SERVER]: sending partial decrypt lead add to [" << client->GetID()
-                                                            << "]:");
+    OPENFHE_DEBUG("[SERVER]: sending partial decrypt lead add to ["
+                  << client->GetID() << "]:");
     Serial::Serialize(Partial_LeadAdd, os, SerType::BINARY);
 
     msg.header.id = ThreshMsgTypes::SendDecryptLeadAdd;
-    msg << os.str();  // push the string onto the message.
+    msg << os.str(); // push the string onto the message.
     OPENFHE_DEBUG("[SERVER]: msg.size() " << msg.size());
     OPENFHE_DEBUG("[SERVER]: msg.body.size() " << msg.body.size());
     client->Send(msg);
@@ -995,12 +997,12 @@ class ThreshServer : public olc::net::server_interface<ThreshMsgTypes> {
 
     std::string s;
     std::ostringstream os(s);
-    OPENFHE_DEBUG("[SERVER]: sending partial decrypt main sum to [" << client->GetID()
-                                                            << "]:");
+    OPENFHE_DEBUG("[SERVER]: sending partial decrypt main sum to ["
+                  << client->GetID() << "]:");
     Serial::Serialize(Partial_MainSum, os, SerType::BINARY);
 
     msg.header.id = ThreshMsgTypes::SendDecryptMainSum;
-    msg << os.str();  // push the string onto the message.
+    msg << os.str(); // push the string onto the message.
     OPENFHE_DEBUG("[SERVER]: msg.size() " << msg.size());
     OPENFHE_DEBUG("[SERVER]: msg.body.size() " << msg.body.size());
     client->Send(msg);
@@ -1020,12 +1022,12 @@ class ThreshServer : public olc::net::server_interface<ThreshMsgTypes> {
 
     std::string s;
     std::ostringstream os(s);
-    OPENFHE_DEBUG("[SERVER]: sending partial decrypt lead sum to [" << client->GetID()
-                                                            << "]:");
+    OPENFHE_DEBUG("[SERVER]: sending partial decrypt lead sum to ["
+                  << client->GetID() << "]:");
     Serial::Serialize(Partial_LeadSum, os, SerType::BINARY);
 
     msg.header.id = ThreshMsgTypes::SendDecryptLeadSum;
-    msg << os.str();  // push the string onto the message.
+    msg << os.str(); // push the string onto the message.
     OPENFHE_DEBUG("[SERVER]: msg.size() " << msg.size());
     OPENFHE_DEBUG("[SERVER]: msg.body.size() " << msg.body.size());
     client->Send(msg);
@@ -1033,7 +1035,7 @@ class ThreshServer : public olc::net::server_interface<ThreshMsgTypes> {
 
   void RecvClientPartialMainAddCT(
       std::shared_ptr<olc::net::connection<ThreshMsgTypes>> client,
-      olc::net::message<ThreshMsgTypes>& msg) {
+      olc::net::message<ThreshMsgTypes> &msg) {
     // receive the partially decrypted CT from this client,
     // and store it in the data structure with this client as key
     // note a more complex server could store the key in a
@@ -1059,7 +1061,7 @@ class ThreshServer : public olc::net::server_interface<ThreshMsgTypes> {
 
   void RecvClientPartialMainMultCT(
       std::shared_ptr<olc::net::connection<ThreshMsgTypes>> client,
-      olc::net::message<ThreshMsgTypes>& msg) {
+      olc::net::message<ThreshMsgTypes> &msg) {
     // receive the partially decrypted CT from this client,
     // and store it in the data structure with this client as key
     // note a more complex server could store the key in a
@@ -1084,7 +1086,7 @@ class ThreshServer : public olc::net::server_interface<ThreshMsgTypes> {
 
   void RecvClientPartialMainSumCT(
       std::shared_ptr<olc::net::connection<ThreshMsgTypes>> client,
-      olc::net::message<ThreshMsgTypes>& msg) {
+      olc::net::message<ThreshMsgTypes> &msg) {
     // receive the partially decrypted CT from this client,
     // and store it in the data structure with this client as key
     // note a more complex server could store the key in a
@@ -1109,7 +1111,7 @@ class ThreshServer : public olc::net::server_interface<ThreshMsgTypes> {
 
   void RecvClientPartialLeadAddCT(
       std::shared_ptr<olc::net::connection<ThreshMsgTypes>> client,
-      olc::net::message<ThreshMsgTypes>& msg) {
+      olc::net::message<ThreshMsgTypes> &msg) {
     // receive the partially decrypted CT from this client,
     // and store it in the data structure with this client as key
     // note a more complex server could store the key in a
@@ -1135,7 +1137,7 @@ class ThreshServer : public olc::net::server_interface<ThreshMsgTypes> {
 
   void RecvClientPartialLeadMultCT(
       std::shared_ptr<olc::net::connection<ThreshMsgTypes>> client,
-      olc::net::message<ThreshMsgTypes>& msg) {
+      olc::net::message<ThreshMsgTypes> &msg) {
     // receive the partially decrypted CT from this client,
     // and store it in the data structure with this client as key
     // note a more complex server could store the key in a
@@ -1160,7 +1162,7 @@ class ThreshServer : public olc::net::server_interface<ThreshMsgTypes> {
 
   void RecvClientPartialLeadSumCT(
       std::shared_ptr<olc::net::connection<ThreshMsgTypes>> client,
-      olc::net::message<ThreshMsgTypes>& msg) {
+      olc::net::message<ThreshMsgTypes> &msg) {
     // receive the partially decrypted CT from this client,
     // and store it in the data structure with this client as key
     // note a more complex server could store the key in a
@@ -1183,27 +1185,28 @@ class ThreshServer : public olc::net::server_interface<ThreshMsgTypes> {
     Partial_LeadSumRecd = true;
   }
 
-  void incrementNumClients(void){
-	numClient++;
-    std::cout << "[Server] Incrementing # clients, now "<< numClient << "\n";
+  void incrementNumClients(void) {
+    numClient++;
+    std::cout << "[Server] Incrementing # clients, now " << numClient << "\n";
   }
 
-  void decrementNumClients(void){
-	numClient--;
-    std::cout << "[Server] Decrementing # clients, now "<< numClient << "\n";
+  void decrementNumClients(void) {
+    numClient--;
+    std::cout << "[Server] Decrementing # clients, now " << numClient << "\n";
   }
-  void exitIfNoClients(void){
-	if (!numClient) {
-	  std::cout << "[Server] Shutting down\n";
-	  exit(EXIT_SUCCESS);
-	}
+  void exitIfNoClients(void) {
+    if (!numClient) {
+      std::cout << "[Server] Shutting down\n";
+      exit(EXIT_SUCCESS);
+    }
   }
 
- private:
+private:
   // Server state
   CC m_serverCC;
 
-  usint numClient = 0; //keeps track of # clients, and when it goes back to zero, exits
+  usint numClient =
+      0; // keeps track of # clients, and when it goes back to zero, exits
 
   // a full up server would have lists of all the clients,
   // and their approved connections,
@@ -1232,4 +1235,4 @@ class ThreshServer : public olc::net::server_interface<ThreshMsgTypes> {
   bool Partial_LeadSumRecd = false, Partial_MainSumRecd = false;
 };
 
-#endif  // THRESH_SERVER_H
+#endif // THRESH_SERVER_H

@@ -1,14 +1,14 @@
-// @file real-socket-server - code to simulate a server to show an example of encrypted
-// server-client processing relationships via sockets.
+// @file real-socket-server - code to simulate a server to show an example of
+// encrypted server-client processing relationships via sockets.
 //
-//The server serializes contexts, public key and processing keys for
+// The server serializes contexts, public key and processing keys for
 // the client to then load. It then generates and encrypts some data
 // to send to the client. The client loads the crypto context and
 // keys, then operates on the encrypted data, encrypts additional
 // data, and sends the results back to the server.  Finally, the
 // server decrypts the result and in this demo verifies that results
 // are correct.
-// 
+//
 // @author: Ian Quah, Dave Cousins
 // TPOC: contact@openfhe-crypto.org
 
@@ -32,17 +32,16 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include "utils_socket.h"
 #include "openfhe.h"
+#include "utils_socket.h"
 
 using namespace lbcrypto;
-
 
 /**
  * Mocks a server which supports some basic operations
  */
 class Server {
- public:
+public:
   /**
    * Instantiation of our "Server"
    * @param multDepth - integer describing the multiplicative depth for our CKKS
@@ -57,22 +56,22 @@ class Server {
   void sendCCAndKeys(tcp::socket &s);
 
   /**
-   * generateAndSendData - read from some internal location, encrypt then send it off
-   * for some client to process
+   * generateAndSendData - read from some internal location, encrypt then send
+   * it off for some client to process
    *    - in this case we write the data directly to socket s
    */
   void generateAndSendData(tcp::socket &s);
 
   /**
    * receiveAndVerifyData - receive data from client and
-   * verify it. 
+   * verify it.
    *
    */
   void receiveAndVerifyData(tcp::socket &s);
 
- private:
+private:
   /**
-   * readData - reads data from a local source (in reality just generate it) 
+   * readData - reads data from a local source (in reality just generate it)
    * @return complex matrix of values of interest
    */
   complexMatrix readData(void);
@@ -88,12 +87,12 @@ class Server {
 
   /**
    * actually writeData contained in matrix to socket s
-   * @param s socket 
+   * @param s socket
    * @param matrix
    */
   void writeData(tcp::socket &s, const ciphertextMatrix &matrix);
 
-  KPair m_kp; //contains secret and public key!
+  KPair m_kp; // contains secret and public key!
   CC m_cc;
   int m_vectorSize = 0;
 };
@@ -104,11 +103,11 @@ class Server {
 
 Server::Server(int multDepth, int scaleModSize, int batchSize) {
 
-   CCParams<CryptoContextCKKSRNS> parameters;
-    parameters.SetMultiplicativeDepth(multDepth);
-    parameters.SetScalingModSize(scaleModSize);
-    parameters.SetBatchSize(batchSize);
-	
+  CCParams<CryptoContextCKKSRNS> parameters;
+  parameters.SetMultiplicativeDepth(multDepth);
+  parameters.SetScalingModSize(scaleModSize);
+  parameters.SetBatchSize(batchSize);
+
   m_cc = GenCryptoContext(parameters);
 
   m_cc->Enable(PKE);
@@ -118,7 +117,6 @@ Server::Server(int multDepth, int scaleModSize, int batchSize) {
   m_kp = m_cc->KeyGen();
   m_cc->EvalMultKeyGen(m_kp.secretKey);
   m_cc->EvalAtIndexKeyGen(m_kp.secretKey, {1, 2, -1, -2});
-
 }
 
 /**
@@ -133,7 +131,8 @@ void Server::generateAndSendData(tcp::socket &s) {
 }
 
 /**
- * receiveAndVerifyData - "receive" a payload from the client and verify the results
+ * receiveAndVerifyData - "receive" a payload from the client and verify the
+ * results
  */
 void Server::receiveAndVerifyData(tcp::socket &s) {
   /////////////////////////////////////////////////////////////////
@@ -158,8 +157,9 @@ void Server::receiveAndVerifyData(tcp::socket &s) {
   serverCiphertextFromClient_Rot = recvCT(s);
   serverCiphertextFromClient_RogNeg = recvCT(s);
   serverCiphertextFromClient_Vec = recvCT(s);
-  
-  std::cout << "SERVER: Deserialized all processed encrypted data from client" << std::endl;
+
+  std::cout << "SERVER: Deserialized all processed encrypted data from client"
+            << std::endl;
 
   Plaintext serverPlaintextFromClient_Mult;
   Plaintext serverPlaintextFromClient_Add;
@@ -241,8 +241,7 @@ std::vector<std::vector<std::complex<double>>> Server::readData(void) {
  * @return
  */
 ciphertextMatrix Server::packAndEncrypt(const complexMatrix &matrixOfData) {
-  auto container =
-      ciphertextMatrix(matrixOfData.size(), CT());
+  auto container = ciphertextMatrix(matrixOfData.size(), CT());
 
   unsigned int ind = 0;
   for (auto &v : matrixOfData) {
@@ -272,53 +271,52 @@ void Server::sendCCAndKeys(tcp::socket &s) {
 void Server::writeData(tcp::socket &s, const ciphertextMatrix &matrix) {
 
   std::cout << "SERVER: sending encrypted data" << std::endl;
-  for (size_t i = 0; i < matrix.size(); i++){
-	sendCT(s, matrix[i]);
-	std::cout << "SERVER: ciphertext " << i << " serialized" << std::endl;
+  for (size_t i = 0; i < matrix.size(); i++) {
+    sendCT(s, matrix[i]);
+    std::cout << "SERVER: ciphertext " << i << " serialized" << std::endl;
   }
 }
 
-
 /////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[]) {
   TimeVar t;
-  
+
   try {
-	if (argc != 2) {
-	  std::cerr << "Usage: real-socket-server <port>\n";
-	  return 1;
-	}
-	const int multDepth = 5;
-	const int scaleFactorBits = 40;
-	const usint batchSize = 32;
-	Server server = Server(multDepth, scaleFactorBits, batchSize);
-	TIC(t);
+    if (argc != 2) {
+      std::cerr << "Usage: real-socket-server <port>\n";
+      return 1;
+    }
+    const int multDepth = 5;
+    const int scaleFactorBits = 40;
+    const usint batchSize = 32;
+    Server server = Server(multDepth, scaleFactorBits, batchSize);
+    TIC(t);
 
-	boost::asio::io_service io_service;
+    boost::asio::io_service io_service;
 
-	std::cout << "SERVER: creating acceptor for " << argv[1] << std::endl;
-	tcp::acceptor a(io_service, tcp::endpoint(tcp::v4(), atoi( argv[1])));
-	std::cout << "SERVER: accepting socket" << std::endl;
+    std::cout << "SERVER: creating acceptor for " << argv[1] << std::endl;
+    tcp::acceptor a(io_service, tcp::endpoint(tcp::v4(), atoi(argv[1])));
+    std::cout << "SERVER: accepting socket" << std::endl;
 
-	tcp::socket s(io_service);
-	a.accept(s);
+    tcp::socket s(io_service);
+    a.accept(s);
 
-	std::cout << "SERVER: sending CC and Keys" << std::endl;
-	server.sendCCAndKeys(s);
+    std::cout << "SERVER: sending CC and Keys" << std::endl;
+    server.sendCCAndKeys(s);
 
-	std::cout << "SERVER: Generate and Send data" << std::endl;  
-	server.generateAndSendData(s);
+    std::cout << "SERVER: Generate and Send data" << std::endl;
+    server.generateAndSendData(s);
 
-	std::cout << "SERVER: Receive and Verify data" << std::endl;
-	server.receiveAndVerifyData(s);
+    std::cout << "SERVER: Receive and Verify data" << std::endl;
+    server.receiveAndVerifyData(s);
 
-  } catch (std::exception& e) {
+  } catch (std::exception &e) {
     std::cerr << "Exception: " << e.what() << "\n";
   }
 
   double totalTimeMSec = TOC_MS(t);
-  std::cout << "SERVER: Total time: " << totalTimeMSec << " mSec" << std::endl;  
+  std::cout << "SERVER: Total time: " << totalTimeMSec << " mSec" << std::endl;
   return EXIT_SUCCESS;
 }

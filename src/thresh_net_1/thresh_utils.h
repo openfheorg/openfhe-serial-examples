@@ -34,23 +34,22 @@
 #include "key/key-ser.h"
 #include "scheme/ckksrns/ckksrns-ser.h"
 
-
-#include <iostream>
+#include <boost/interprocess/streams/bufferstream.hpp> // to convert between Serialize and msg
 #include <fstream>
+#include <iostream>
 #include <olc_net.h>
-#include <boost/interprocess/streams/bufferstream.hpp>  // to convert between Serialize and msg
 
 using namespace lbcrypto;
 
 // shortcuts for OpenFHE types to make the code more readable
-using CC = CryptoContext<DCRTPoly>;         // crypto context
-using CT = Ciphertext<DCRTPoly>;            // ciphertext
-using PT = Plaintext;                       // plaintext
-using KPair = KeyPair<DCRTPoly>;        // secret/public key par.
-using EvKey = EvalKey<DCRTPoly>;        // evaluation key (reencryption key)
-using PrivKey = PrivateKey<DCRTPoly>;  // secret key of par.
-using PubKey = PublicKey<DCRTPoly>;    // public key of par.
-using vecInt = std::vector<int64_t>;             // vector of ints
+using CC = CryptoContext<DCRTPoly>;   // crypto context
+using CT = Ciphertext<DCRTPoly>;      // ciphertext
+using PT = Plaintext;                 // plaintext
+using KPair = KeyPair<DCRTPoly>;      // secret/public key par.
+using EvKey = EvalKey<DCRTPoly>;      // evaluation key (reencryption key)
+using PrivKey = PrivateKey<DCRTPoly>; // secret key of par.
+using PubKey = PublicKey<DCRTPoly>;   // public key of par.
+using vecInt = std::vector<int64_t>;  // vector of ints
 
 // ThreshMsgTypes are the trigger messages to/from the server to the clients.
 // Based on this trigger message, the server responds and clients transition
@@ -215,11 +214,11 @@ std::vector<std::string> ThreshMsgNames{
     "RequestDecryptLeadSum",
     "SendDecryptMainSum",
     "SendDecryptLeadSum",
-	"DisconnectClient",
+    "DisconnectClient",
 };
 
 // Code to convert from enum class to underlying int for reference.
-std::ostream& operator<<(std::ostream& os, const ThreshMsgTypes& obj) {
+std::ostream &operator<<(std::ostream &os, const ThreshMsgTypes &obj) {
   os << static_cast<std::underlying_type<ThreshMsgTypes>::type>(obj);
   os << ": "
      << ThreshMsgNames[static_cast<std::underlying_type<ThreshMsgTypes>::type>(
@@ -231,9 +230,9 @@ std::ostream& operator<<(std::ostream& os, const ThreshMsgTypes& obj) {
  * Take a powernap of (DEFAULT) 0.5 seconds
  * @param ms - number of milisec to nap
  */
-void nap(const int& ms = 500) {
+void nap(const int &ms = 500) {
   std::chrono::duration<int, std::milli> timespan(ms);
   std::this_thread::sleep_for(timespan);
 }
 
-#endif  // THRESH_UTILS_H
+#endif // THRESH_UTILS_H

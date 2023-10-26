@@ -66,33 +66,33 @@ int main(int argc, char *argv[]) {
   // Set-up of parameters
   ////////////////////////////////////////////////////////////
   int opt;
-  std::string myName("");  // name of client to run
+  std::string myName(""); // name of client to run
   uint32_t port(0);
-  std::string hostName("");  // name of server host
+  std::string hostName(""); // name of server host
 
   while ((opt = getopt(argc, argv, "i:n:p:h")) != -1) {
     switch (opt) {
-      case 'i':
-        hostName = optarg;
-        std::cout << "host name " << hostName << std::endl;
-        break;
-      case 'n':
-        myName = optarg;
-        std::cout << "starting producer client named " << myName << std::endl;
-        break;
-      case 'p':
-        port = atoi(optarg);
-        std::cout << "host port " << port << std::endl;
-        break;
-      case 'h':
-      default: /* '?' */
-        std::cerr << "Usage: " << std::endl
-                  << "arguments:" << std::endl
-                  << "  -n name of the consumer client" << std::endl
-                  << "  -i IP or hostname of the server" << std::endl
-                  << "  -p port of the server" << std::endl
-                  << "  -h prints this message" << std::endl;
-        std::exit(EXIT_FAILURE);
+    case 'i':
+      hostName = optarg;
+      std::cout << "host name " << hostName << std::endl;
+      break;
+    case 'n':
+      myName = optarg;
+      std::cout << "starting producer client named " << myName << std::endl;
+      break;
+    case 'p':
+      port = atoi(optarg);
+      std::cout << "host port " << port << std::endl;
+      break;
+    case 'h':
+    default: /* '?' */
+      std::cerr << "Usage: " << std::endl
+                << "arguments:" << std::endl
+                << "  -n name of the consumer client" << std::endl
+                << "  -i IP or hostname of the server" << std::endl
+                << "  -p port of the server" << std::endl
+                << "  -h prints this message" << std::endl;
+      std::exit(EXIT_FAILURE);
     }
   }
   PreProducerClient c;
@@ -123,132 +123,132 @@ int main(int argc, char *argv[]) {
   unsigned int ringsize(0U);
   unsigned int nShort(0U);
   unsigned int plaintextModulus(0U);
-  vecInt vShorts;  // our vector of shorts (must be stored as int64_t)
+  vecInt vShorts; // our vector of shorts (must be stored as int64_t)
   vecInt unpackedConsumer(0);
-  TimeVar t;  // time benchmarking variable
+  TimeVar t; // time benchmarking variable
   std::string aes_key;
   std::ifstream keyinfile;
 
-  OPENFHE_DEBUG_FLAG(false);  // Turns on and off OPENFHE_DEBUG() statements
+  OPENFHE_DEBUG_FLAG(false); // Turns on and off OPENFHE_DEBUG() statements
 
   while (!done) {
     if (c.IsConnected()) {
-      switch (state) {  // sequence of states that producer executes
-        case ProducerStates::GetMessage:
-          // client tests for a response from the server
-          if (!c.Incoming().empty()) {
-            auto msg = c.Incoming().pop_front().msg;
+      switch (state) { // sequence of states that producer executes
+      case ProducerStates::GetMessage:
+        // client tests for a response from the server
+        if (!c.Incoming().empty()) {
+          auto msg = c.Incoming().pop_front().msg;
 
-            switch (msg.header.id) {
-              case PreMsgTypes::ServerAccept:
-                // Server has responded to the Connect()
-                OPENFHE_DEBUG("Server Accepted Connection");
-                state = ProducerStates::RequestCC;
-                break;
+          switch (msg.header.id) {
+          case PreMsgTypes::ServerAccept:
+            // Server has responded to the Connect()
+            OPENFHE_DEBUG("Server Accepted Connection");
+            state = ProducerStates::RequestCC;
+            break;
 
-              case PreMsgTypes::SendCC:
-                PROFILELOG(myName << ": reading crypto context from server");
-                TIC(t);
-                clientCC = c.RecvCC(msg);
-                PROFILELOG(myName << ": elapsed time " << TOC_MS(t) << "msec.");
-                state = ProducerStates::GenKeys;
-                break;
+          case PreMsgTypes::SendCC:
+            PROFILELOG(myName << ": reading crypto context from server");
+            TIC(t);
+            clientCC = c.RecvCC(msg);
+            PROFILELOG(myName << ": elapsed time " << TOC_MS(t) << "msec.");
+            state = ProducerStates::GenKeys;
+            break;
 
-              case PreMsgTypes::AckPrivateKey:
-                // Server has responded to a sendPrivateKey
-                OPENFHE_DEBUG("Server Accepted PrivateKey");
-                state = ProducerStates::GenCT;
-                break;
+          case PreMsgTypes::AckPrivateKey:
+            // Server has responded to a sendPrivateKey
+            OPENFHE_DEBUG("Server Accepted PrivateKey");
+            state = ProducerStates::GenCT;
+            break;
 
-              case PreMsgTypes::AckCT:
-                // Server has responded to a sendCT
-                OPENFHE_DEBUG("Server Accepted CT");
-                // state = ProducerStates::RequestVecInt;
-                break;
+          case PreMsgTypes::AckCT:
+            // Server has responded to a sendCT
+            OPENFHE_DEBUG("Server Accepted CT");
+            // state = ProducerStates::RequestVecInt;
+            break;
 
-              default:
-                PROFILELOG(myName << ": received unhandled message from Server "
-                                  << msg.header.id);
-            }
-          }  // end isEmpty -- could sleep here
-          break;
-
-        case ProducerStates::RequestCC:  // first step
-          TIC(t);
-          PROFILELOG(myName << ": Requesting CC");
-          c.RequestCC();  // request the CC from the server.
-          PROFILELOG(myName << ": elapsed time " << TOC_MS(t) << "msec.");
-          state = ProducerStates::GetMessage;
-          break;
-
-        case ProducerStates::GenKeys:  // if have received the CC from the
-                                       // server
-          // then generate keys and send the private key to server
-          PROFILELOG(myName << ": Generating keys");
-          TIC(t);
-          keyPair = clientCC->KeyGen();
-          PROFILELOG(myName << ": elapsed time " << TOC_MS(t) << "msec.");
-
-          if (!keyPair.good()) {
-            std::cerr << myName << " Key generation failed!" << std::endl;
-            std::exit(EXIT_FAILURE);
+          default:
+            PROFILELOG(myName << ": received unhandled message from Server "
+                              << msg.header.id);
           }
+        } // end isEmpty -- could sleep here
+        break;
 
-          PROFILELOG(myName << ": Serializing and sending private key");
-          TIC(t);
-          c.SendPrivateKey(keyPair);
-          PROFILELOG(myName << ": elapsed time " << TOC_MS(t) << "msec.");
-          state = ProducerStates::GetMessage;
+      case ProducerStates::RequestCC: // first step
+        TIC(t);
+        PROFILELOG(myName << ": Requesting CC");
+        c.RequestCC(); // request the CC from the server.
+        PROFILELOG(myName << ": elapsed time " << TOC_MS(t) << "msec.");
+        state = ProducerStates::GetMessage;
+        break;
 
-          break;
+      case ProducerStates::GenKeys: // if have received the CC from the
+                                    // server
+        // then generate keys and send the private key to server
+        PROFILELOG(myName << ": Generating keys");
+        TIC(t);
+        keyPair = clientCC->KeyGen();
+        PROFILELOG(myName << ": elapsed time " << TOC_MS(t) << "msec.");
 
-        case ProducerStates::GenCT:  // if we have sent the private key to the
-          // server generate and send CT
-          ringsize = clientCC->GetRingDimension();
-          plaintextModulus =
-              clientCC->GetCryptoParameters()->GetPlaintextModulus();
-          PROFILELOG(myName << ": plaintext modulus is :" << plaintextModulus);
+        if (!keyPair.good()) {
+          std::cerr << myName << " Key generation failed!" << std::endl;
+          std::exit(EXIT_FAILURE);
+        }
 
-          // replace 256 back to 65536
-          if (plaintextModulus < 256) {
-            std::cerr << "error, code is designed for plaintextModulus>65536, "
-                         "modulus is "
-                      << plaintextModulus << std::endl;
-            std::exit(EXIT_FAILURE);
-          }
-          PROFILELOG(myName << ": can encrypt " << ringsize * 2
-                            << " bytes of data");
-          nShort = ringsize;
-          PROFILELOG(myName << ": encrypting data, length " << nShort);
-          TIC(t);
+        PROFILELOG(myName << ": Serializing and sending private key");
+        TIC(t);
+        c.SendPrivateKey(keyPair);
+        PROFILELOG(myName << ": elapsed time " << TOC_MS(t) << "msec.");
+        state = ProducerStates::GetMessage;
 
-          keyinfile.open(GConf.producer_aes_key);
-          if (!keyinfile) {
-            std::cout << "Unable to open key file";
-            exit(1);  // terminate with error
-          }
+        break;
 
-          keyinfile >> aes_key;
-          keyinfile.close();
-          pt = clientCC->MakeStringPlaintext(aes_key);
+      case ProducerStates::GenCT: // if we have sent the private key to the
+        // server generate and send CT
+        ringsize = clientCC->GetRingDimension();
+        plaintextModulus =
+            clientCC->GetCryptoParameters()->GetPlaintextModulus();
+        PROFILELOG(myName << ": plaintext modulus is :" << plaintextModulus);
 
-          ct = clientCC->Encrypt(keyPair.publicKey, pt);  // Encrypt
-          PROFILELOG(myName << ": elapsed time " << TOC_MS(t) << "msec.");
-          PROFILELOG(myName << ": sending CT to server");
-          c.SendCT(ct);
-          state = ProducerStates::GetMessage;
+        // replace 256 back to 65536
+        if (plaintextModulus < 256) {
+          std::cerr << "error, code is designed for plaintextModulus>65536, "
+                       "modulus is "
+                    << plaintextModulus << std::endl;
+          std::exit(EXIT_FAILURE);
+        }
+        PROFILELOG(myName << ": can encrypt " << ringsize * 2
+                          << " bytes of data");
+        nShort = ringsize;
+        PROFILELOG(myName << ": encrypting data, length " << nShort);
+        TIC(t);
 
-          nap(1000);
-          done = true;
-          break;
+        keyinfile.open(GConf.producer_aes_key);
+        if (!keyinfile) {
+          std::cout << "Unable to open key file";
+          exit(1); // terminate with error
+        }
 
-      }  // switch state
+        keyinfile >> aes_key;
+        keyinfile.close();
+        pt = clientCC->MakeStringPlaintext(aes_key);
 
-    }  // IsConnected()
+        ct = clientCC->Encrypt(keyPair.publicKey, pt); // Encrypt
+        PROFILELOG(myName << ": elapsed time " << TOC_MS(t) << "msec.");
+        PROFILELOG(myName << ": sending CT to server");
+        c.SendCT(ct);
+        state = ProducerStates::GetMessage;
 
-    nap(100);  // take a 100 msec pause
+        nap(1000);
+        done = true;
+        break;
 
-  }  // while !done
+      } // switch state
+
+    } // IsConnected()
+
+    nap(100); // take a 100 msec pause
+
+  } // while !done
   if (good) {
     std::cout << myName << ": PRE passes" << std::endl;
   } else {
@@ -261,8 +261,8 @@ int main(int argc, char *argv[]) {
 
   PROFILELOG(myName << ": Execution Completed.");
 
-  if (!good) {  // there could be an error
+  if (!good) { // there could be an error
     std::exit(EXIT_FAILURE);
   }
-  std::exit(EXIT_SUCCESS);  // successful return
+  std::exit(EXIT_SUCCESS); // successful return
 }

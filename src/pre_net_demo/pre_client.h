@@ -5,8 +5,9 @@
 
 // common to both Producers and Consumers
 class PreCommonClient : public olc::net::client_interface<PreMsgTypes> {
- public:
-  OPENFHE_DEBUG_FLAG(false);  // set to true to turn on OPENFHE_DEBUG() statements
+public:
+  OPENFHE_DEBUG_FLAG(
+      false); // set to true to turn on OPENFHE_DEBUG() statements
 
   void RequestCC(void) {
     olc::net::message<PreMsgTypes> msg;
@@ -38,8 +39,8 @@ class PreCommonClient : public olc::net::client_interface<PreMsgTypes> {
 
 // producer client methods
 class PreProducerClient : public PreCommonClient {
- public:
-  OPENFHE_DEBUG_FLAG(false);  // set to true to turn on OPENFHE_DEBUG() statements
+public:
+  OPENFHE_DEBUG_FLAG(false); // true turns on OPENFHE_DEBUG() statements
 
   void SendPrivateKey(KPair &kp) {
     std::string s;
@@ -86,7 +87,7 @@ class PreProducerClient : public PreCommonClient {
 
     // NOTE Deserialize needs a basic_istream<char>
     OPENFHE_DEBUG("Producer: Deserialize");
-    vecInt vi;  // create the vector
+    vecInt vi; // create the vector
     Serial::Deserialize(vi, is, SerType::BINARY);
     OPENFHE_DEBUG("Producer: Done");
     assert(is.good());
@@ -96,8 +97,9 @@ class PreProducerClient : public PreCommonClient {
 
 // consumer client methods
 class PreConsumerClient : public PreCommonClient {
- public:
-  OPENFHE_DEBUG_FLAG(false);  // set to true to turn on OPENFHE_DEBUG() statements
+public:
+  OPENFHE_DEBUG_FLAG(
+      false); // set to true to turn on OPENFHE_DEBUG() statements
 
   void SendPublicKey(KPair &kp) {
     std::string s;
@@ -170,4 +172,4 @@ class PreConsumerClient : public PreCommonClient {
   }
 };
 
-#endif  // PRE_CLIENT_H
+#endif // PRE_CLIENT_H

@@ -83,33 +83,33 @@ int main(int argc, char *argv[]) {
   // Set-up of parameters
   ////////////////////////////////////////////////////////////
   int opt;
-  std::string myName("");  // name of client to run
+  std::string myName(""); // name of client to run
   uint32_t port(0);
-  std::string hostName("");  // name of server host
+  std::string hostName(""); // name of server host
 
   while ((opt = getopt(argc, argv, "i:n:p:h")) != -1) {
     switch (opt) {
-      case 'i':
-        hostName = optarg;
-        std::cout << "host name " << hostName << std::endl;
-        break;
-      case 'n':
-        myName = optarg;
-        std::cout << "starting client named " << myName << std::endl;
-        break;
-      case 'p':
-        port = atoi(optarg);
-        std::cout << "host port " << port << std::endl;
-        break;
-      case 'h':
-      default: /* '?' */
-        std::cerr << "Usage: " << std::endl
-                  << "arguments:" << std::endl
-                  << "  -n name of the client" << std::endl
-                  << "  -i IP or hostname of the server" << std::endl
-                  << "  -p port of the server" << std::endl
-                  << "  -h prints this message" << std::endl;
-        std::exit(EXIT_FAILURE);
+    case 'i':
+      hostName = optarg;
+      std::cout << "host name " << hostName << std::endl;
+      break;
+    case 'n':
+      myName = optarg;
+      std::cout << "starting client named " << myName << std::endl;
+      break;
+    case 'p':
+      port = atoi(optarg);
+      std::cout << "host port " << port << std::endl;
+      break;
+    case 'h':
+    default: /* '?' */
+      std::cerr << "Usage: " << std::endl
+                << "arguments:" << std::endl
+                << "  -n name of the client" << std::endl
+                << "  -i IP or hostname of the server" << std::endl
+                << "  -p port of the server" << std::endl
+                << "  -h prints this message" << std::endl;
+      std::exit(EXIT_FAILURE);
     }
   }
   ClientB c;
@@ -130,7 +130,7 @@ int main(int argc, char *argv[]) {
 
   bool done = false;
 
-  ClientBStates state(ClientBStates::GetMessage);  // simple state machine
+  ClientBStates state(ClientBStates::GetMessage); // simple state machine
 
   CC clientCC;
 
@@ -147,7 +147,7 @@ int main(int argc, char *argv[]) {
   // received keys from Round3
   EvKey Rnd3evalMultFinal;
 
-  TimeVar t;  // time benchmarking variable
+  TimeVar t; // time benchmarking variable
 
   // example plaintext vectors
   std::vector<double> vectorOfInts1 = {1, 2, 3, 4, 5, 6, 5, 4, 3, 2, 1, 0};
@@ -171,569 +171,557 @@ int main(int argc, char *argv[]) {
   std::vector<CT> ciphertextPartialAdd2, ciphertextPartialMult2,
       ciphertextPartialSum2;
 
-  OPENFHE_DEBUG_FLAG(false);  // turns on and off OPENFHE_DEBUG() statements
+  OPENFHE_DEBUG_FLAG(false); // turns on and off OPENFHE_DEBUG() statements
   while (!done) {
     if (c.IsConnected()) {
       // client executes a state
-      switch (state) {  // sequence of states that the client executes
-        case ClientBStates::GetMessage:
-          // client tests for a response from the server
-          if (!c.Incoming().empty()) {
-            auto msg = c.Incoming().pop_front().msg;
+      switch (state) { // sequence of states that the client executes
+      case ClientBStates::GetMessage:
+        // client tests for a response from the server
+        if (!c.Incoming().empty()) {
+          auto msg = c.Incoming().pop_front().msg;
 
-            switch (msg.header.id) {
-              case ThreshMsgTypes::ServerAccept:
-                // Server has responded to the Connect()
-                OPENFHE_DEBUG("Server Accepted Connection");
-                state = ClientBStates::RequestCC;
-                break;
+          switch (msg.header.id) {
+          case ThreshMsgTypes::ServerAccept:
+            // Server has responded to the Connect()
+            OPENFHE_DEBUG("Server Accepted Connection");
+            state = ClientBStates::RequestCC;
+            break;
 
-              case ThreshMsgTypes::SendCC:
-                PROFILELOG(myName << ": reading crypto context from server");
-                TIC(t);
-                clientCC = c.RecvCC(msg);
-                PROFILELOG(myName << ": elapsed time " << TOC_MS(t) << "msec.");
-                state = ClientBStates::RequestRnd1PubKey;
-                break;
+          case ThreshMsgTypes::SendCC:
+            PROFILELOG(myName << ": reading crypto context from server");
+            TIC(t);
+            clientCC = c.RecvCC(msg);
+            PROFILELOG(myName << ": elapsed time " << TOC_MS(t) << "msec.");
+            state = ClientBStates::RequestRnd1PubKey;
+            break;
 
-              case ThreshMsgTypes::SendRnd1PubKey:
-                PROFILELOG(myName << ": reading Round 1 public key");
-                TIC(t);
-                Rnd1Pubkey = c.RecvRnd1PubKey(msg);
-                PROFILELOG(myName << ": elapsed time " << TOC_MS(t) << "msec.");
-                state = ClientBStates::RequestRnd1evalMultKey;
-                break;
+          case ThreshMsgTypes::SendRnd1PubKey:
+            PROFILELOG(myName << ": reading Round 1 public key");
+            TIC(t);
+            Rnd1Pubkey = c.RecvRnd1PubKey(msg);
+            PROFILELOG(myName << ": elapsed time " << TOC_MS(t) << "msec.");
+            state = ClientBStates::RequestRnd1evalMultKey;
+            break;
 
-              case ThreshMsgTypes::SendRnd1evalMultKey:
-                PROFILELOG(myName << ": reading Round 1 eval mult key");
-                TIC(t);
-                Rnd1evalMultKey = c.RecvRnd1evalMultKey(msg);
-                PROFILELOG(myName << ": elapsed time " << TOC_MS(t) << "msec.");
-                state = ClientBStates::RequestRnd1evalSumKeys;
-                break;
+          case ThreshMsgTypes::SendRnd1evalMultKey:
+            PROFILELOG(myName << ": reading Round 1 eval mult key");
+            TIC(t);
+            Rnd1evalMultKey = c.RecvRnd1evalMultKey(msg);
+            PROFILELOG(myName << ": elapsed time " << TOC_MS(t) << "msec.");
+            state = ClientBStates::RequestRnd1evalSumKeys;
+            break;
 
-              case ThreshMsgTypes::SendRnd1evalSumKeys:
-                PROFILELOG(myName << ": reading Round 1 eval sum key");
-                TIC(t);
-                Rnd1evalSumKeys = c.RecvRnd1evalSumKeys(msg);
-                PROFILELOG(myName << ": elapsed time " << TOC_MS(t) << "msec.");
-                state = ClientBStates::GenRnd2Keys;
-                break;
+          case ThreshMsgTypes::SendRnd1evalSumKeys:
+            PROFILELOG(myName << ": reading Round 1 eval sum key");
+            TIC(t);
+            Rnd1evalSumKeys = c.RecvRnd1evalSumKeys(msg);
+            PROFILELOG(myName << ": elapsed time " << TOC_MS(t) << "msec.");
+            state = ClientBStates::GenRnd2Keys;
+            break;
 
-              case ThreshMsgTypes::NackRnd1PubKey:
-                // Server has responded to a SendRnd1PubKey with a NAC, retry
-                OPENFHE_DEBUG("Server NackRnd1PubKey");
-                nap(1000);  // sleep for a second and retry.
-                state = ClientBStates::RequestRnd1PubKey;
-                break;
+          case ThreshMsgTypes::NackRnd1PubKey:
+            // Server has responded to a SendRnd1PubKey with a NAC, retry
+            OPENFHE_DEBUG("Server NackRnd1PubKey");
+            nap(1000); // sleep for a second and retry.
+            state = ClientBStates::RequestRnd1PubKey;
+            break;
 
-              case ThreshMsgTypes::NackRnd1evalMultKey:
-                // Server has responded to a SendRnd1evalMultKey with a NAC,
-                // retry
-                OPENFHE_DEBUG("Server NackRnd1evalMultKey");
-                nap(1000);  // sleep for a second and retry.
-                state = ClientBStates::RequestRnd1evalMultKey;
-                break;
+          case ThreshMsgTypes::NackRnd1evalMultKey:
+            // Server has responded to a SendRnd1evalMultKey with a NAC,
+            // retry
+            OPENFHE_DEBUG("Server NackRnd1evalMultKey");
+            nap(1000); // sleep for a second and retry.
+            state = ClientBStates::RequestRnd1evalMultKey;
+            break;
 
-              case ThreshMsgTypes::NackRnd1evalSumKeys:
-                // Server has responded to a SendRnd1evalSumKeys with a NAC,
-                // retry
-                OPENFHE_DEBUG("Server NackRnd1evalSumKeys");
-                nap(1000);  // sleep for a second and retry.
-                state = ClientBStates::RequestRnd1evalSumKeys;
-                break;
+          case ThreshMsgTypes::NackRnd1evalSumKeys:
+            // Server has responded to a SendRnd1evalSumKeys with a NAC,
+            // retry
+            OPENFHE_DEBUG("Server NackRnd1evalSumKeys");
+            nap(1000); // sleep for a second and retry.
+            state = ClientBStates::RequestRnd1evalSumKeys;
+            break;
 
-              case ThreshMsgTypes::AckRnd2SharedKey:
-                PROFILELOG(myName << ": Acknowledged Round 2 Public key");
-                state = ClientBStates::SendRnd2evalMultAB;
-                break;
+          case ThreshMsgTypes::AckRnd2SharedKey:
+            PROFILELOG(myName << ": Acknowledged Round 2 Public key");
+            state = ClientBStates::SendRnd2evalMultAB;
+            break;
 
-              case ThreshMsgTypes::AckRnd2EvalMultAB:
-                PROFILELOG(myName << ": Acknowledged Round 2 EvalMultAB");
-                state = ClientBStates::SendRnd2evalMultBAB;
-                break;
+          case ThreshMsgTypes::AckRnd2EvalMultAB:
+            PROFILELOG(myName << ": Acknowledged Round 2 EvalMultAB");
+            state = ClientBStates::SendRnd2evalMultBAB;
+            break;
 
-              case ThreshMsgTypes::AckRnd2EvalMultBAB:
-                PROFILELOG(myName << ": Acknowledged Round 2 EvalMultBAB");
-                state = ClientBStates::SendRnd2evalSumKeysJoin;
-                break;
+          case ThreshMsgTypes::AckRnd2EvalMultBAB:
+            PROFILELOG(myName << ": Acknowledged Round 2 EvalMultBAB");
+            state = ClientBStates::SendRnd2evalSumKeysJoin;
+            break;
 
-              case ThreshMsgTypes::AckRnd2EvalSumKeysJoin:
-                PROFILELOG(myName << ": Acknowledged Round 2 EvalSumKeysJoin");
-                state = ClientBStates::RequestRnd3evalMultFinal;
-                break;
+          case ThreshMsgTypes::AckRnd2EvalSumKeysJoin:
+            PROFILELOG(myName << ": Acknowledged Round 2 EvalSumKeysJoin");
+            state = ClientBStates::RequestRnd3evalMultFinal;
+            break;
 
-              case ThreshMsgTypes::SendRnd3EvalMultFinal:
-                PROFILELOG(myName << ": reading Round 3 eval mult final key");
-                TIC(t);
-                Rnd3evalMultFinal = c.RecvRnd3evalMultFinal(msg);
-                clientCC->InsertEvalMultKey({Rnd3evalMultFinal});
-                PROFILELOG(myName << ": elapsed time " << TOC_MS(t) << "msec.");
-                state = ClientBStates::GenCT1;
-                break;
+          case ThreshMsgTypes::SendRnd3EvalMultFinal:
+            PROFILELOG(myName << ": reading Round 3 eval mult final key");
+            TIC(t);
+            Rnd3evalMultFinal = c.RecvRnd3evalMultFinal(msg);
+            clientCC->InsertEvalMultKey({Rnd3evalMultFinal});
+            PROFILELOG(myName << ": elapsed time " << TOC_MS(t) << "msec.");
+            state = ClientBStates::GenCT1;
+            break;
 
-              case ThreshMsgTypes::AckCT1:
-                PROFILELOG(myName << ": Acknowledging Ciphertext1");
-                state = ClientBStates::GenCT2;
-                break;
+          case ThreshMsgTypes::AckCT1:
+            PROFILELOG(myName << ": Acknowledging Ciphertext1");
+            state = ClientBStates::GenCT2;
+            break;
 
-              case ThreshMsgTypes::AckCT2:
-                PROFILELOG(myName << ": Acknowledging Ciphertext2");
-                state = ClientBStates::GenCT3;
-                break;
+          case ThreshMsgTypes::AckCT2:
+            PROFILELOG(myName << ": Acknowledging Ciphertext2");
+            state = ClientBStates::GenCT3;
+            break;
 
-              case ThreshMsgTypes::AckCT3:
-                PROFILELOG(myName << ": Acknowledging Ciphertext3");
-                state = ClientBStates::RequestAddCT;
-                break;
+          case ThreshMsgTypes::AckCT3:
+            PROFILELOG(myName << ": Acknowledging Ciphertext3");
+            state = ClientBStates::RequestAddCT;
+            break;
 
-              case ThreshMsgTypes::SendAddCT:
-                PROFILELOG(myName << ": reading Addition ciphertext");
-                TIC(t);
-                ciphertextAdd123 = c.RecvCT(msg);
-                PROFILELOG(myName << ": elapsed time " << TOC_MS(t) << "msec.");
-                state = ClientBStates::RequestMultCT;
-                break;
+          case ThreshMsgTypes::SendAddCT:
+            PROFILELOG(myName << ": reading Addition ciphertext");
+            TIC(t);
+            ciphertextAdd123 = c.RecvCT(msg);
+            PROFILELOG(myName << ": elapsed time " << TOC_MS(t) << "msec.");
+            state = ClientBStates::RequestMultCT;
+            break;
 
-              case ThreshMsgTypes::SendMultCT:
-                PROFILELOG(myName << ": reading Multiplication ciphertext");
-                TIC(t);
-                ciphertextMult = c.RecvCT(msg);
-                PROFILELOG(myName << ": elapsed time " << TOC_MS(t) << "msec.");
-                state = ClientBStates::RequestSumCT;
-                break;
+          case ThreshMsgTypes::SendMultCT:
+            PROFILELOG(myName << ": reading Multiplication ciphertext");
+            TIC(t);
+            ciphertextMult = c.RecvCT(msg);
+            PROFILELOG(myName << ": elapsed time " << TOC_MS(t) << "msec.");
+            state = ClientBStates::RequestSumCT;
+            break;
 
-              case ThreshMsgTypes::SendSumCT:
-                PROFILELOG(myName << ": reading Sum ciphertext");
-                TIC(t);
-                ciphertextSum = c.RecvCT(msg);
-                PROFILELOG(myName << ": elapsed time " << TOC_MS(t) << "msec.");
-                nap(500);
-                state = ClientBStates::DecryptMainPartialAdd;
-                break;
+          case ThreshMsgTypes::SendSumCT:
+            PROFILELOG(myName << ": reading Sum ciphertext");
+            TIC(t);
+            ciphertextSum = c.RecvCT(msg);
+            PROFILELOG(myName << ": elapsed time " << TOC_MS(t) << "msec.");
+            nap(500);
+            state = ClientBStates::DecryptMainPartialAdd;
+            break;
 
-              case ThreshMsgTypes::AckPartialMainAdd:
-                PROFILELOG(
-                    myName
-                    << ": acknowledging partially decrypted main add CT");
-                nap(200);
-                state = ClientBStates::DecryptMainPartialMult;
-                break;
+          case ThreshMsgTypes::AckPartialMainAdd:
+            PROFILELOG(myName
+                       << ": acknowledging partially decrypted main add CT");
+            nap(200);
+            state = ClientBStates::DecryptMainPartialMult;
+            break;
 
-              case ThreshMsgTypes::AckPartialMainMult:
-                PROFILELOG(
-                    myName
-                    << ": acknowledging partially decrypted main mult CT");
-                nap(200);
-                state = ClientBStates::DecryptMainPartialSum;
-                break;
+          case ThreshMsgTypes::AckPartialMainMult:
+            PROFILELOG(myName
+                       << ": acknowledging partially decrypted main mult CT");
+            nap(200);
+            state = ClientBStates::DecryptMainPartialSum;
+            break;
 
-              case ThreshMsgTypes::AckPartialMainSum:
-                PROFILELOG(
-                    myName
-                    << ": acknowledging partially decrypted main sum CT");
-                state = ClientBStates::RequestDecryptLeadAdd;
-                break;
+          case ThreshMsgTypes::AckPartialMainSum:
+            PROFILELOG(myName
+                       << ": acknowledging partially decrypted main sum CT");
+            state = ClientBStates::RequestDecryptLeadAdd;
+            break;
 
-              case ThreshMsgTypes::SendDecryptLeadAdd:
-                PROFILELOG(myName << ": reading partial decrypted ciphertext "
-                                     "add from client A");
-                TIC(t);
-                ciphertextPartialadd1 = c.RecvCT(msg);
-                PROFILELOG(myName << ": elapsed time " << TOC_MS(t) << "msec.");
-                state = ClientBStates::RequestDecryptLeadMult;
-                break;
+          case ThreshMsgTypes::SendDecryptLeadAdd:
+            PROFILELOG(myName << ": reading partial decrypted ciphertext "
+                                 "add from client A");
+            TIC(t);
+            ciphertextPartialadd1 = c.RecvCT(msg);
+            PROFILELOG(myName << ": elapsed time " << TOC_MS(t) << "msec.");
+            state = ClientBStates::RequestDecryptLeadMult;
+            break;
 
-              case ThreshMsgTypes::SendDecryptLeadMult:
-                PROFILELOG(myName << ": reading partial decrypted ciphertext "
-                                     "mult from client B");
-                TIC(t);
-                ciphertextPartialmult1 = c.RecvCT(msg);
-                PROFILELOG(myName << ": elapsed time " << TOC_MS(t) << "msec.");
-                state = ClientBStates::RequestDecryptLeadSum;
-                break;
+          case ThreshMsgTypes::SendDecryptLeadMult:
+            PROFILELOG(myName << ": reading partial decrypted ciphertext "
+                                 "mult from client B");
+            TIC(t);
+            ciphertextPartialmult1 = c.RecvCT(msg);
+            PROFILELOG(myName << ": elapsed time " << TOC_MS(t) << "msec.");
+            state = ClientBStates::RequestDecryptLeadSum;
+            break;
 
-              case ThreshMsgTypes::SendDecryptLeadSum:
-                PROFILELOG(myName << ": reading partial decrypted ciphertext "
-                                     "sum from client A");
-                TIC(t);
-                ciphertextPartialsum1 = c.RecvCT(msg);
-                PROFILELOG(myName << ": elapsed time " << TOC_MS(t) << "msec.");
-                state = ClientBStates::DecryptFusion;
-                break;
+          case ThreshMsgTypes::SendDecryptLeadSum:
+            PROFILELOG(myName << ": reading partial decrypted ciphertext "
+                                 "sum from client A");
+            TIC(t);
+            ciphertextPartialsum1 = c.RecvCT(msg);
+            PROFILELOG(myName << ": elapsed time " << TOC_MS(t) << "msec.");
+            state = ClientBStates::DecryptFusion;
+            break;
 
-              case ThreshMsgTypes::NackCT1:
-                PROFILELOG("Server NackCT1");
-                nap(1000);  // sleep for a second and retry.
-                state = ClientBStates::GenCT1;
-                break;
+          case ThreshMsgTypes::NackCT1:
+            PROFILELOG("Server NackCT1");
+            nap(1000); // sleep for a second and retry.
+            state = ClientBStates::GenCT1;
+            break;
 
-              case ThreshMsgTypes::NackCT2:
-                PROFILELOG("Server NackCT2");
-                nap(1000);  // sleep for a second and retry.
-                state = ClientBStates::GenCT2;
-                break;
+          case ThreshMsgTypes::NackCT2:
+            PROFILELOG("Server NackCT2");
+            nap(1000); // sleep for a second and retry.
+            state = ClientBStates::GenCT2;
+            break;
 
-              case ThreshMsgTypes::NackCT3:
-                PROFILELOG("Server NackCT3");
-                nap(1000);  // sleep for a second and retry.
-                state = ClientBStates::GenCT3;
-                break;
+          case ThreshMsgTypes::NackCT3:
+            PROFILELOG("Server NackCT3");
+            nap(1000); // sleep for a second and retry.
+            state = ClientBStates::GenCT3;
+            break;
 
-              case ThreshMsgTypes::NackAddCT:
-                PROFILELOG("Server NackAddCT");
-                nap(1000);
-                state = ClientBStates::RequestAddCT;
-                break;
+          case ThreshMsgTypes::NackAddCT:
+            PROFILELOG("Server NackAddCT");
+            nap(1000);
+            state = ClientBStates::RequestAddCT;
+            break;
 
-              case ThreshMsgTypes::NackMultCT:
-                PROFILELOG("Server NackMultCT");
-                nap(1000);
-                state = ClientBStates::RequestMultCT;
-                break;
+          case ThreshMsgTypes::NackMultCT:
+            PROFILELOG("Server NackMultCT");
+            nap(1000);
+            state = ClientBStates::RequestMultCT;
+            break;
 
-              case ThreshMsgTypes::NackSumCT:
-                PROFILELOG("Server NackSumCT");
-                nap(1000);
-                state = ClientBStates::RequestSumCT;
-                break;
+          case ThreshMsgTypes::NackSumCT:
+            PROFILELOG("Server NackSumCT");
+            nap(1000);
+            state = ClientBStates::RequestSumCT;
+            break;
 
-              case ThreshMsgTypes::NackRnd3evalMultFinal:
-                // Server has responded to a SendRnd3EvalMultFinal with a NAC,
-                // retry
-                OPENFHE_DEBUG("Server NackRnd3EvalMultFinal");
-                nap(1000);  // sleep for a second and retry.
-                state = ClientBStates::RequestRnd3evalMultFinal;
-                break;
+          case ThreshMsgTypes::NackRnd3evalMultFinal:
+            // Server has responded to a SendRnd3EvalMultFinal with a NAC,
+            // retry
+            OPENFHE_DEBUG("Server NackRnd3EvalMultFinal");
+            nap(1000); // sleep for a second and retry.
+            state = ClientBStates::RequestRnd3evalMultFinal;
+            break;
 
-              case ThreshMsgTypes::NackPartialLeadAdd:
-                PROFILELOG("Server NackPartialLeadAdd");
-                nap(1000);  // sleep for a second and retry.
-                state = ClientBStates::RequestDecryptLeadAdd;
-                break;
+          case ThreshMsgTypes::NackPartialLeadAdd:
+            PROFILELOG("Server NackPartialLeadAdd");
+            nap(1000); // sleep for a second and retry.
+            state = ClientBStates::RequestDecryptLeadAdd;
+            break;
 
-              case ThreshMsgTypes::NackPartialLeadMult:
-                PROFILELOG("Server NackPartialLeadMult");
-                nap(1000);  // sleep for a second and retry.
-                state = ClientBStates::RequestDecryptLeadMult;
-                break;
+          case ThreshMsgTypes::NackPartialLeadMult:
+            PROFILELOG("Server NackPartialLeadMult");
+            nap(1000); // sleep for a second and retry.
+            state = ClientBStates::RequestDecryptLeadMult;
+            break;
 
-              case ThreshMsgTypes::NackPartialLeadSum:
-                PROFILELOG("Server NackPartialLeadSum");
-                nap(1000);  // sleep for a second and retry.
-                state = ClientBStates::RequestDecryptLeadSum;
-                break;
+          case ThreshMsgTypes::NackPartialLeadSum:
+            PROFILELOG("Server NackPartialLeadSum");
+            nap(1000); // sleep for a second and retry.
+            state = ClientBStates::RequestDecryptLeadSum;
+            break;
 
-              case ThreshMsgTypes::NackPartialMainAdd:
-                PROFILELOG("Server NackPartialMainAdd");
-                nap(1000);  // sleep for a second and retry.
-                state = ClientBStates::DecryptMainPartialAdd;
-                break;
+          case ThreshMsgTypes::NackPartialMainAdd:
+            PROFILELOG("Server NackPartialMainAdd");
+            nap(1000); // sleep for a second and retry.
+            state = ClientBStates::DecryptMainPartialAdd;
+            break;
 
-              case ThreshMsgTypes::NackPartialMainMult:
-                PROFILELOG("Server NackPartialMainMult");
-                nap(1000);  // sleep for a second and retry.
-                state = ClientBStates::DecryptMainPartialMult;
-                break;
+          case ThreshMsgTypes::NackPartialMainMult:
+            PROFILELOG("Server NackPartialMainMult");
+            nap(1000); // sleep for a second and retry.
+            state = ClientBStates::DecryptMainPartialMult;
+            break;
 
-              case ThreshMsgTypes::NackPartialMainSum:
-                PROFILELOG("Server NackPartialMainSum");
-                nap(1000);  // sleep for a second and retry.
-                state = ClientBStates::DecryptMainPartialSum;
-                break;
+          case ThreshMsgTypes::NackPartialMainSum:
+            PROFILELOG("Server NackPartialMainSum");
+            nap(1000); // sleep for a second and retry.
+            state = ClientBStates::DecryptMainPartialSum;
+            break;
 
-              default:
-                PROFILELOG(myName << ": received unhandled message from Server "
-                                  << msg.header.id);
-            }
-          }  // end isEmpty -- could sleep here
-          break;
-
-        case ClientBStates::RequestCC:  // first step
-          TIC(t);
-          PROFILELOG(myName << ": Requesting CC");
-          c.RequestCC();  // request the CC from the server.
-          PROFILELOG(myName << ":elapsed time " << TOC_MS(t) << "msec.");
-          state = ClientBStates::GetMessage;
-          break;
-
-        case ClientBStates::RequestRnd1PubKey:
-          TIC(t);
-          PROFILELOG(myName << ": Requesting Round 1 public key");
-          c.RequestRnd1PubKey();  // request the round 1 public key from Alice.
-          PROFILELOG(myName << ":elapsed time " << TOC_MS(t) << "msec.");
-          state = ClientBStates::GetMessage;
-          break;
-
-        case ClientBStates::RequestRnd1evalMultKey:
-          TIC(t);
-          PROFILELOG(myName << ": Requesting Round 1 EvalMultKey");
-          c.RequestRnd1evalMultKey();  // request the Round 1 EvalMultKey from
-                                       // Alice.
-          PROFILELOG(myName << ":elapsed time " << TOC_MS(t) << "msec.");
-          state = ClientBStates::GetMessage;
-          break;
-
-        case ClientBStates::RequestRnd1evalSumKeys:
-          TIC(t);
-          PROFILELOG(myName << ": Requesting Round 1 EvalSumKeys");
-          c.RequestRnd1evalSumKeys();  // request the Round 1 EvalSumKeys from
-                                       // Alice.
-          PROFILELOG(myName << ":elapsed time " << TOC_MS(t) << "msec.");
-          state = ClientBStates::GetMessage;
-          break;
-
-        case ClientBStates::GenRnd2Keys:
-          PROFILELOG("Round 2 " << myName << " started.");
-          TIC(t);
-          std::cout << "Joint public key for (s_a + s_b) is generated..."
-                    << std::endl;
-          keyPair = clientCC->MultipartyKeyGen(Rnd1Pubkey);
-
-          evalMultKey2 = clientCC->MultiKeySwitchGen(
-              keyPair.secretKey, keyPair.secretKey, Rnd1evalMultKey);
-
-          evalMultAB = clientCC->MultiAddEvalKeys(
-              Rnd1evalMultKey, evalMultKey2, keyPair.publicKey->GetKeyTag());
-
-          evalMultBAB = clientCC->MultiMultEvalKey(
-              keyPair.secretKey, evalMultAB, keyPair.publicKey->GetKeyTag());
-
-          c.SendRnd2SharedKey(keyPair);
-
-          evalSumKeysB =
-              clientCC->MultiEvalSumKeyGen(keyPair.secretKey, Rnd1evalSumKeys,
-                                           keyPair.publicKey->GetKeyTag());
-
-          evalSumKeysJoin = clientCC->MultiAddEvalSumKeys(
-              Rnd1evalSumKeys, evalSumKeysB, keyPair.publicKey->GetKeyTag());
-
-          PROFILELOG(myName << ": elapsed time " << TOC_MS(t) << "msec.");
-
-          state = ClientBStates::GetMessage;
-          if (!keyPair.good()) {
-            std::cerr << myName << "Round 2 Key generation failed!"
-                      << std::endl;
-            std::exit(EXIT_FAILURE);
+          default:
+            PROFILELOG(myName << ": received unhandled message from Server "
+                              << msg.header.id);
           }
-          break;
+        } // end isEmpty -- could sleep here
+        break;
 
-        case ClientBStates::SendRnd2evalMultAB:
-          PROFILELOG(myName << ": Serializing and sending Round 2 EvalMultAB");
-          TIC(t);
-          c.SendRnd2EvalMultAB(evalMultAB);
-          PROFILELOG(myName << ": elapsed time " << TOC_MS(t) << "msec.");
-          state = ClientBStates::GetMessage;
-          break;
+      case ClientBStates::RequestCC: // first step
+        TIC(t);
+        PROFILELOG(myName << ": Requesting CC");
+        c.RequestCC(); // request the CC from the server.
+        PROFILELOG(myName << ":elapsed time " << TOC_MS(t) << "msec.");
+        state = ClientBStates::GetMessage;
+        break;
 
-        case ClientBStates::SendRnd2evalMultBAB:
-          PROFILELOG(myName << ": Serializing and sending Round 2 EvalMultBAB");
-          TIC(t);
-          c.SendRnd2EvalMultBAB(evalMultBAB);
-          PROFILELOG(myName << ": elapsed time " << TOC_MS(t) << "msec.");
-          state = ClientBStates::GetMessage;
-          break;
+      case ClientBStates::RequestRnd1PubKey:
+        TIC(t);
+        PROFILELOG(myName << ": Requesting Round 1 public key");
+        c.RequestRnd1PubKey(); // request the round 1 public key from Alice.
+        PROFILELOG(myName << ":elapsed time " << TOC_MS(t) << "msec.");
+        state = ClientBStates::GetMessage;
+        break;
 
-        case ClientBStates::SendRnd2evalSumKeysJoin:
-          PROFILELOG(myName
-                     << ": Serializing and sending Round 2 EvalSumKeysJoin");
-          TIC(t);
-          c.SendRnd2EvalSumKeysJoin(evalSumKeysJoin);
-          PROFILELOG(myName << ": elapsed time " << TOC_MS(t) << "msec.");
-          state = ClientBStates::GetMessage;
-          break;
+      case ClientBStates::RequestRnd1evalMultKey:
+        TIC(t);
+        PROFILELOG(myName << ": Requesting Round 1 EvalMultKey");
+        c.RequestRnd1evalMultKey(); // request the Round 1 EvalMultKey from
+                                    // Alice.
+        PROFILELOG(myName << ":elapsed time " << TOC_MS(t) << "msec.");
+        state = ClientBStates::GetMessage;
+        break;
 
-        case ClientBStates::RequestRnd3evalMultFinal:
-          PROFILELOG(myName << ": Requesting Round 3 final shared Mult key");
-          TIC(t);
-          c.RequestRnd3evalMultFinal();  // request the Round 3 EvalMultFinal
-                                         // from Alice.
-          PROFILELOG(myName << ":elapsed time " << TOC_MS(t) << "msec.");
-          state = ClientBStates::GetMessage;
-          break;
+      case ClientBStates::RequestRnd1evalSumKeys:
+        TIC(t);
+        PROFILELOG(myName << ": Requesting Round 1 EvalSumKeys");
+        c.RequestRnd1evalSumKeys(); // request the Round 1 EvalSumKeys from
+                                    // Alice.
+        PROFILELOG(myName << ":elapsed time " << TOC_MS(t) << "msec.");
+        state = ClientBStates::GetMessage;
+        break;
 
-        case ClientBStates::GenCT1:
-          PROFILELOG(myName << ": Generate ciphertext 1");
-          plaintext1 = clientCC->MakeCKKSPackedPlaintext(vectorOfInts1);
-          ciphertext1 = clientCC->Encrypt(keyPair.publicKey, plaintext1);
+      case ClientBStates::GenRnd2Keys:
+        PROFILELOG("Round 2 " << myName << " started.");
+        TIC(t);
+        std::cout << "Joint public key for (s_a + s_b) is generated..."
+                  << std::endl;
+        keyPair = clientCC->MultipartyKeyGen(Rnd1Pubkey);
 
-          c.SendCT1(ciphertext1, 0);
-          state = ClientBStates::GetMessage;
-          break;
+        evalMultKey2 = clientCC->MultiKeySwitchGen(
+            keyPair.secretKey, keyPair.secretKey, Rnd1evalMultKey);
 
-        case ClientBStates::GenCT2:
-          PROFILELOG(myName << ": Generate ciphertext 2");
+        evalMultAB = clientCC->MultiAddEvalKeys(Rnd1evalMultKey, evalMultKey2,
+                                                keyPair.publicKey->GetKeyTag());
 
-          plaintext2 = clientCC->MakeCKKSPackedPlaintext(vectorOfInts2);
-          ciphertext2 = clientCC->Encrypt(keyPair.publicKey, plaintext2);
+        evalMultBAB = clientCC->MultiMultEvalKey(
+            keyPair.secretKey, evalMultAB, keyPair.publicKey->GetKeyTag());
 
-          c.SendCT2(ciphertext2, 1);
-          state = ClientBStates::GetMessage;
+        c.SendRnd2SharedKey(keyPair);
 
-          break;
+        evalSumKeysB = clientCC->MultiEvalSumKeyGen(
+            keyPair.secretKey, Rnd1evalSumKeys, keyPair.publicKey->GetKeyTag());
 
-        case ClientBStates::GenCT3:
-          PROFILELOG(myName << ": Generate ciphertext 3");
+        evalSumKeysJoin = clientCC->MultiAddEvalSumKeys(
+            Rnd1evalSumKeys, evalSumKeysB, keyPair.publicKey->GetKeyTag());
 
-          plaintext3 = clientCC->MakeCKKSPackedPlaintext(vectorOfInts3);
-          ciphertext3 = clientCC->Encrypt(keyPair.publicKey, plaintext3);
+        PROFILELOG(myName << ": elapsed time " << TOC_MS(t) << "msec.");
 
-          c.SendCT3(ciphertext3, 2);
-          state = ClientBStates::GetMessage;
-          break;
+        state = ClientBStates::GetMessage;
+        if (!keyPair.good()) {
+          std::cerr << myName << "Round 2 Key generation failed!" << std::endl;
+          std::exit(EXIT_FAILURE);
+        }
+        break;
 
-        case ClientBStates::RequestAddCT:
+      case ClientBStates::SendRnd2evalMultAB:
+        PROFILELOG(myName << ": Serializing and sending Round 2 EvalMultAB");
+        TIC(t);
+        c.SendRnd2EvalMultAB(evalMultAB);
+        PROFILELOG(myName << ": elapsed time " << TOC_MS(t) << "msec.");
+        state = ClientBStates::GetMessage;
+        break;
 
-          PROFILELOG(myName << ": Requesting eval add ciphertext");
-          TIC(t);
-          c.RequestAddCT();  // request the eval add ciphertext from server.
-          PROFILELOG(myName << ":elapsed time " << TOC_MS(t) << "msec.");
-          state = ClientBStates::GetMessage;
-          break;
+      case ClientBStates::SendRnd2evalMultBAB:
+        PROFILELOG(myName << ": Serializing and sending Round 2 EvalMultBAB");
+        TIC(t);
+        c.SendRnd2EvalMultBAB(evalMultBAB);
+        PROFILELOG(myName << ": elapsed time " << TOC_MS(t) << "msec.");
+        state = ClientBStates::GetMessage;
+        break;
 
-        case ClientBStates::RequestMultCT:
-          PROFILELOG(myName << ": Requesting eval mult ciphertext");
-          TIC(t);
-          c.RequestMultCT();  // request the eval mult ciphertext from server.
-          PROFILELOG(myName << ":elapsed time " << TOC_MS(t) << "msec.");
-          state = ClientBStates::GetMessage;
-          break;
+      case ClientBStates::SendRnd2evalSumKeysJoin:
+        PROFILELOG(
+            myName << ": Serializing and sending Round 2 EvalSumKeysJoin");
+        TIC(t);
+        c.SendRnd2EvalSumKeysJoin(evalSumKeysJoin);
+        PROFILELOG(myName << ": elapsed time " << TOC_MS(t) << "msec.");
+        state = ClientBStates::GetMessage;
+        break;
 
-        case ClientBStates::RequestSumCT:
-          PROFILELOG(myName << ": Requesting eval sum ciphertext");
-          TIC(t);
-          c.RequestSumCT();  // request the eval sum ciphertext from server.
-          PROFILELOG(myName << ":elapsed time " << TOC_MS(t) << "msec.");
-          state = ClientBStates::GetMessage;
-          break;
+      case ClientBStates::RequestRnd3evalMultFinal:
+        PROFILELOG(myName << ": Requesting Round 3 final shared Mult key");
+        TIC(t);
+        c.RequestRnd3evalMultFinal(); // request the Round 3 EvalMultFinal
+                                      // from Alice.
+        PROFILELOG(myName << ":elapsed time " << TOC_MS(t) << "msec.");
+        state = ClientBStates::GetMessage;
+        break;
 
-        case ClientBStates::DecryptMainPartialAdd:
-          PROFILELOG(myName << ": Partial decryption of eval add ciphertext");
-          TIC(t);
+      case ClientBStates::GenCT1:
+        PROFILELOG(myName << ": Generate ciphertext 1");
+        plaintext1 = clientCC->MakeCKKSPackedPlaintext(vectorOfInts1);
+        ciphertext1 = clientCC->Encrypt(keyPair.publicKey, plaintext1);
 
-          ciphertextPartialAdd2
-			= clientCC->MultipartyDecryptMain({ciphertextAdd123},
-											  keyPair.secretKey);
+        c.SendCT1(ciphertext1, 0);
+        state = ClientBStates::GetMessage;
+        break;
 
-          PROFILELOG(myName << ":elapsed time " << TOC_MS(t) << "msec.");
-          c.SendCTPartialAdd(ciphertextPartialAdd2[0]);
-          state = ClientBStates::GetMessage;
-          break;
+      case ClientBStates::GenCT2:
+        PROFILELOG(myName << ": Generate ciphertext 2");
 
-        case ClientBStates::DecryptMainPartialMult:
-          PROFILELOG(myName << ": Partial decryption of eval mult ciphertext");
-          TIC(t);
+        plaintext2 = clientCC->MakeCKKSPackedPlaintext(vectorOfInts2);
+        ciphertext2 = clientCC->Encrypt(keyPair.publicKey, plaintext2);
 
-          ciphertextPartialMult2
-			= clientCC->MultipartyDecryptMain({ciphertextMult},
-											  keyPair.secretKey);
-          PROFILELOG(myName << ":elapsed time " << TOC_MS(t) << "msec.");
-          c.SendCTPartialMult(ciphertextPartialMult2[0]);
-          state = ClientBStates::GetMessage;
-          break;
+        c.SendCT2(ciphertext2, 1);
+        state = ClientBStates::GetMessage;
 
-        case ClientBStates::DecryptMainPartialSum:
-          PROFILELOG(myName << ": Partial decryption of eval sum ciphertext");
-          TIC(t);
+        break;
 
-          clientCC->InsertEvalSumKey(evalSumKeysJoin);
+      case ClientBStates::GenCT3:
+        PROFILELOG(myName << ": Generate ciphertext 3");
 
-          ciphertextPartialSum2
-			= clientCC->MultipartyDecryptMain( {ciphertextSum},
-											   keyPair.secretKey );
-          PROFILELOG(myName << ":elapsed time " << TOC_MS(t) << "msec.");
-          c.SendCTPartialSum(ciphertextPartialSum2[0]);
-          state = ClientBStates::GetMessage;
-          break;
+        plaintext3 = clientCC->MakeCKKSPackedPlaintext(vectorOfInts3);
+        ciphertext3 = clientCC->Encrypt(keyPair.publicKey, plaintext3);
 
-        case ClientBStates::RequestDecryptLeadAdd:
-          PROFILELOG(myName
-                     << ": Requesting partial decrypt lead add ciphertext");
-          TIC(t);
+        c.SendCT3(ciphertext3, 2);
+        state = ClientBStates::GetMessage;
+        break;
 
-          c.RequestDecryptLeadAdd();
-          PROFILELOG(myName << ":elapsed time " << TOC_MS(t) << "msec.");
-          state = ClientBStates::GetMessage;
-          break;
+      case ClientBStates::RequestAddCT:
 
-        case ClientBStates::RequestDecryptLeadMult:
-          PROFILELOG(myName
-                     << ": Requesting partial decrypt lead mult ciphertext");
-          TIC(t);
-          c.RequestDecryptLeadMult();
-          PROFILELOG(myName << ":elapsed time " << TOC_MS(t) << "msec.");
-          state = ClientBStates::GetMessage;
-          break;
+        PROFILELOG(myName << ": Requesting eval add ciphertext");
+        TIC(t);
+        c.RequestAddCT(); // request the eval add ciphertext from server.
+        PROFILELOG(myName << ":elapsed time " << TOC_MS(t) << "msec.");
+        state = ClientBStates::GetMessage;
+        break;
 
-        case ClientBStates::RequestDecryptLeadSum:
-          PROFILELOG(myName
-                     << ": Requesting partial decrypt lead sum ciphertext");
-          TIC(t);
-          c.RequestDecryptLeadSum();
-          PROFILELOG(myName << ":elapsed time " << TOC_MS(t) << "msec.");
-          state = ClientBStates::GetMessage;
-          break;
+      case ClientBStates::RequestMultCT:
+        PROFILELOG(myName << ": Requesting eval mult ciphertext");
+        TIC(t);
+        c.RequestMultCT(); // request the eval mult ciphertext from server.
+        PROFILELOG(myName << ":elapsed time " << TOC_MS(t) << "msec.");
+        state = ClientBStates::GetMessage;
+        break;
 
-        case ClientBStates::DecryptFusion:
-          PROFILELOG(myName << ": perform decrypt fusion");
-          TIC(t);
+      case ClientBStates::RequestSumCT:
+        PROFILELOG(myName << ": Requesting eval sum ciphertext");
+        TIC(t);
+        c.RequestSumCT(); // request the eval sum ciphertext from server.
+        PROFILELOG(myName << ":elapsed time " << TOC_MS(t) << "msec.");
+        state = ClientBStates::GetMessage;
+        break;
 
-          PT plaintextMultipartyAdd, plaintextMultipartyMult,
-              plaintextMultipartySum;
+      case ClientBStates::DecryptMainPartialAdd:
+        PROFILELOG(myName << ": Partial decryption of eval add ciphertext");
+        TIC(t);
 
-          // final decryption for add
-		  std::vector<CT> Partial_Add;
-          Partial_Add.push_back(ciphertextPartialadd1);
-          Partial_Add.push_back(ciphertextPartialAdd2[0]);
-          clientCC->MultipartyDecryptFusion(Partial_Add,
-                                            &plaintextMultipartyAdd);
+        ciphertextPartialAdd2 = clientCC->MultipartyDecryptMain(
+            {ciphertextAdd123}, keyPair.secretKey);
 
-          plaintextMultipartyAdd->SetLength(
-              plaintext1->GetLength());  // ptlength;
+        PROFILELOG(myName << ":elapsed time " << TOC_MS(t) << "msec.");
+        c.SendCTPartialAdd(ciphertextPartialAdd2[0]);
+        state = ClientBStates::GetMessage;
+        break;
 
-          std::cout << "\n Resulting Fused Plaintext Add: \n";
-          std::cout << plaintextMultipartyAdd;
+      case ClientBStates::DecryptMainPartialMult:
+        PROFILELOG(myName << ": Partial decryption of eval mult ciphertext");
+        TIC(t);
 
-          std::cout << "\n";
+        ciphertextPartialMult2 = clientCC->MultipartyDecryptMain(
+            {ciphertextMult}, keyPair.secretKey);
+        PROFILELOG(myName << ":elapsed time " << TOC_MS(t) << "msec.");
+        c.SendCTPartialMult(ciphertextPartialMult2[0]);
+        state = ClientBStates::GetMessage;
+        break;
 
-          // final decryption for multiplication
-          std::vector<Ciphertext<DCRTPoly>> Partial_Mult;
-          Partial_Mult.push_back(ciphertextPartialmult1);
-          Partial_Mult.push_back(ciphertextPartialMult2[0]);
-          clientCC->MultipartyDecryptFusion(Partial_Mult,
-                                            &plaintextMultipartyMult);
+      case ClientBStates::DecryptMainPartialSum:
+        PROFILELOG(myName << ": Partial decryption of eval sum ciphertext");
+        TIC(t);
 
-          plaintextMultipartyMult->SetLength(
-              plaintext1->GetLength());  // ptlength;
+        clientCC->InsertEvalSumKey(evalSumKeysJoin);
 
-          std::cout << "\n Resulting Fused Plaintext Mult: \n";
-          std::cout << plaintextMultipartyMult;
+        ciphertextPartialSum2 =
+            clientCC->MultipartyDecryptMain({ciphertextSum}, keyPair.secretKey);
+        PROFILELOG(myName << ":elapsed time " << TOC_MS(t) << "msec.");
+        c.SendCTPartialSum(ciphertextPartialSum2[0]);
+        state = ClientBStates::GetMessage;
+        break;
 
-          std::cout << "\n";
+      case ClientBStates::RequestDecryptLeadAdd:
+        PROFILELOG(
+            myName << ": Requesting partial decrypt lead add ciphertext");
+        TIC(t);
 
-          // final decryption for sum
-          std::vector<Ciphertext<DCRTPoly>> Partial_Sum;
-          Partial_Sum.push_back(ciphertextPartialsum1);
-          Partial_Sum.push_back(ciphertextPartialSum2[0]);
-          clientCC->MultipartyDecryptFusion(Partial_Sum,
-                                            &plaintextMultipartySum);
+        c.RequestDecryptLeadAdd();
+        PROFILELOG(myName << ":elapsed time " << TOC_MS(t) << "msec.");
+        state = ClientBStates::GetMessage;
+        break;
 
-          plaintextMultipartySum->SetLength(
-              plaintext1->GetLength());  // ptlength;
+      case ClientBStates::RequestDecryptLeadMult:
+        PROFILELOG(
+            myName << ": Requesting partial decrypt lead mult ciphertext");
+        TIC(t);
+        c.RequestDecryptLeadMult();
+        PROFILELOG(myName << ":elapsed time " << TOC_MS(t) << "msec.");
+        state = ClientBStates::GetMessage;
+        break;
 
-          std::cout << "\n Resulting Fused Plaintext Sum: \n";
-          std::cout << plaintextMultipartySum;
+      case ClientBStates::RequestDecryptLeadSum:
+        PROFILELOG(
+            myName << ": Requesting partial decrypt lead sum ciphertext");
+        TIC(t);
+        c.RequestDecryptLeadSum();
+        PROFILELOG(myName << ":elapsed time " << TOC_MS(t) << "msec.");
+        state = ClientBStates::GetMessage;
+        break;
 
-          std::cout << "\n";
+      case ClientBStates::DecryptFusion:
+        PROFILELOG(myName << ": perform decrypt fusion");
+        TIC(t);
 
-          PROFILELOG(myName << ":elapsed time " << TOC_MS(t) << "msec.");
-          done = true;
-          break;
-      }  // switch state
+        PT plaintextMultipartyAdd, plaintextMultipartyMult,
+            plaintextMultipartySum;
 
-    }  // IsConnected()
+        // final decryption for add
+        std::vector<CT> Partial_Add;
+        Partial_Add.push_back(ciphertextPartialadd1);
+        Partial_Add.push_back(ciphertextPartialAdd2[0]);
+        clientCC->MultipartyDecryptFusion(Partial_Add, &plaintextMultipartyAdd);
 
-  }  // while !done
+        plaintextMultipartyAdd->SetLength(plaintext1->GetLength()); // ptlength;
+
+        std::cout << "\n Resulting Fused Plaintext Add: \n";
+        std::cout << plaintextMultipartyAdd;
+
+        std::cout << "\n";
+
+        // final decryption for multiplication
+        std::vector<Ciphertext<DCRTPoly>> Partial_Mult;
+        Partial_Mult.push_back(ciphertextPartialmult1);
+        Partial_Mult.push_back(ciphertextPartialMult2[0]);
+        clientCC->MultipartyDecryptFusion(Partial_Mult,
+                                          &plaintextMultipartyMult);
+
+        plaintextMultipartyMult->SetLength(
+            plaintext1->GetLength()); // ptlength;
+
+        std::cout << "\n Resulting Fused Plaintext Mult: \n";
+        std::cout << plaintextMultipartyMult;
+
+        std::cout << "\n";
+
+        // final decryption for sum
+        std::vector<Ciphertext<DCRTPoly>> Partial_Sum;
+        Partial_Sum.push_back(ciphertextPartialsum1);
+        Partial_Sum.push_back(ciphertextPartialSum2[0]);
+        clientCC->MultipartyDecryptFusion(Partial_Sum, &plaintextMultipartySum);
+
+        plaintextMultipartySum->SetLength(plaintext1->GetLength()); // ptlength;
+
+        std::cout << "\n Resulting Fused Plaintext Sum: \n";
+        std::cout << plaintextMultipartySum;
+
+        std::cout << "\n";
+
+        PROFILELOG(myName << ":elapsed time " << TOC_MS(t) << "msec.");
+        done = true;
+        break;
+      } // switch state
+
+    } // IsConnected()
+
+  } // while !done
 
   ////////////////////////////////////////////////////////////
   // Done
@@ -742,5 +730,5 @@ int main(int argc, char *argv[]) {
   PROFILELOG(myName << ": Execution Completed.");
   c.DisconnectClient();
   nap(1000);
-  std::exit(EXIT_SUCCESS);  // successful return
+  std::exit(EXIT_SUCCESS); // successful return
 }

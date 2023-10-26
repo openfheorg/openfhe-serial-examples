@@ -7,7 +7,8 @@ void hexDump(const char *desc, const void *addr, const int len) {
 
   // Output description if given.
 
-  if (desc != NULL) printf("%s:\n", desc);
+  if (desc != NULL)
+    printf("%s:\n", desc);
 
   // Length checks.
 
@@ -27,7 +28,8 @@ void hexDump(const char *desc, const void *addr, const int len) {
     if ((i % 16) == 0) {
       // Don't print ASCII buffer for the "zeroth" line.
 
-      if (i != 0) printf("  %s\n", buff);
+      if (i != 0)
+        printf("  %s\n", buff);
 
       // Output the offset.
 
@@ -39,7 +41,7 @@ void hexDump(const char *desc, const void *addr, const int len) {
 
     // And buffer a printable ASCII character for later.
 
-    if ((pc[i] < 0x20) || (pc[i] > 0x7e))  // isprint() may be better.
+    if ((pc[i] < 0x20) || (pc[i] > 0x7e)) // isprint() may be better.
       buff[i % 16] = '.';
     else
       buff[i % 16] = pc[i];

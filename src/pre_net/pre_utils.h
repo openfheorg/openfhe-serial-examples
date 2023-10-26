@@ -24,7 +24,7 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-//remove explicit directory
+// remove explicit directory
 
 #ifndef PRE_UTILS_H
 #define PRE_UTILS_H
@@ -36,78 +36,75 @@
 #include "key/key-ser.h"
 #include "scheme/bfvrns/bfvrns-ser.h"
 
-
-#include <iostream>
-#include <fstream>
-#include <olc_net.h>
 #include <boost/interprocess/streams/bufferstream.hpp> // to convert between Serialize and msg
+#include <fstream>
+#include <iostream>
+#include <olc_net.h>
 
 using namespace lbcrypto;
 
 // shortcuts for OpenFHE types to make the code more readable
-using CC = CryptoContext<DCRTPoly>; //crypto context
-using CT = Ciphertext<DCRTPoly>;  // ciphertext
-using PT = Plaintext;             // plaintext
-using KPair = KeyPair<DCRTPoly>; //secret/public key par. 
-using EvKey = EvalKey<DCRTPoly>;  //evaluation key (reencryption key)
-using PrivKey = PrivateKey<DCRTPoly>; //secret key of par. 
-using PubKey = PublicKey<DCRTPoly>; //public key of par. 
+using CC = CryptoContext<DCRTPoly>;   // crypto context
+using CT = Ciphertext<DCRTPoly>;      // ciphertext
+using PT = Plaintext;                 // plaintext
+using KPair = KeyPair<DCRTPoly>;      // secret/public key par.
+using EvKey = EvalKey<DCRTPoly>;      // evaluation key (reencryption key)
+using PrivKey = PrivateKey<DCRTPoly>; // secret key of par.
+using PubKey = PublicKey<DCRTPoly>;   // public key of par.
 using vecInt = std::vector<int64_t>;  // vector of ints
 
-enum class PreMsgTypes : uint32_t
-  {
-	ServerAccept,
-	RequestCC,
-	SendCC,
-	SendPublicKey,
-	AckPublicKey,
-	SendPrivateKey,
-	AckPrivateKey,
-	RequestReEncryptionKey,
-	SendReEncryptionKey,
-	NackReEncryptionKey,
-	SendCT,
-	AckCT,
-	RequestCT,
-	NackCT,
-	SendVecInt,
-	AckVecInt,
-	RequestVecInt,
-	NackVecInt,
-	DisconnectProducer,
-	DisconnectConsumer,
-  };
+enum class PreMsgTypes : uint32_t {
+  ServerAccept,
+  RequestCC,
+  SendCC,
+  SendPublicKey,
+  AckPublicKey,
+  SendPrivateKey,
+  AckPrivateKey,
+  RequestReEncryptionKey,
+  SendReEncryptionKey,
+  NackReEncryptionKey,
+  SendCT,
+  AckCT,
+  RequestCT,
+  NackCT,
+  SendVecInt,
+  AckVecInt,
+  RequestVecInt,
+  NackVecInt,
+  DisconnectProducer,
+  DisconnectConsumer,
+};
 
-std::vector<std::string> PreMsgNames
-  {
-	"ServerAccept",
-	"RequestCC",
-	"SendCC",
-	"SendPublicKey",
-	"AckPublicKey",
-	"SendPrivateKey",
-	"AckPrivateKey",
-	"RequestReEncryptionKey",
-	"SendReEncryptionKey",
-	"NackReEncryptionKey",
-	"SendCT",
-	"AckCT",
-	"RequestCT",
-	"NackCT",
-	"SendVecInt",
-	"AckVecInt",
-	"RequestVecInt",
-	"NackVecInt",
-	"DisconnectProducer",
-	"DisconnectConsumer",
-  };
+std::vector<std::string> PreMsgNames{
+    "ServerAccept",
+    "RequestCC",
+    "SendCC",
+    "SendPublicKey",
+    "AckPublicKey",
+    "SendPrivateKey",
+    "AckPrivateKey",
+    "RequestReEncryptionKey",
+    "SendReEncryptionKey",
+    "NackReEncryptionKey",
+    "SendCT",
+    "AckCT",
+    "RequestCT",
+    "NackCT",
+    "SendVecInt",
+    "AckVecInt",
+    "RequestVecInt",
+    "NackVecInt",
+    "DisconnectProducer",
+    "DisconnectConsumer",
+};
 
-//Code to convert from enum class to underlying int for reference.
-std::ostream& operator << (std::ostream& os, const PreMsgTypes& obj)
-{
-   os << static_cast<std::underlying_type<PreMsgTypes>::type>(obj);
-   os << ": "<< PreMsgNames[static_cast<std::underlying_type<PreMsgTypes>::type>(obj)];
-   return os;
+// Code to convert from enum class to underlying int for reference.
+std::ostream &operator<<(std::ostream &os, const PreMsgTypes &obj) {
+  os << static_cast<std::underlying_type<PreMsgTypes>::type>(obj);
+  os << ": "
+     << PreMsgNames[static_cast<std::underlying_type<PreMsgTypes>::type>(obj)];
+  return os;
 }
 
 /**
@@ -119,20 +116,18 @@ void nap(const int &ms = 500) {
   std::this_thread::sleep_for(timespan);
 }
 
-
 void checkVecInt(std::string name, vecInt v) {
   size_t sz = v.size();
-  std::cout <<name << " First 8 points: ";
-  for (size_t i = 0; i < 8; i++){ //print 
-	std::cout << v[i] << " ";
+  std::cout << name << " First 8 points: ";
+  for (size_t i = 0; i < 8; i++) { // print
+    std::cout << v[i] << " ";
   }
-  std::cout << std::endl; 
-  std::cout <<"Last 8 points of ("<<sz<<"): ";
-  for (size_t i = sz-8; i < sz; i++){ //print 
-	std::cout << v[i] << " ";
+  std::cout << std::endl;
+  std::cout << "Last 8 points of (" << sz << "): ";
+  for (size_t i = sz - 8; i < sz; i++) { // print
+    std::cout << v[i] << " ";
   }
-  std::cout << std::endl; 
+  std::cout << std::endl;
 }
 
-
-#endif  // PRE_UTILS_H
+#endif // PRE_UTILS_H

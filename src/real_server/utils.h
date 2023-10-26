@@ -32,26 +32,24 @@
 #include "key/key-ser.h"
 #include "scheme/ckksrns/ckksrns-ser.h"
 
-
-
+#include <boost/interprocess/sync/named_mutex.hpp>
+#include <boost/interprocess/sync/scoped_lock.hpp>
 #include <chrono>
 #include <complex>
 #include <cstdio>
+#include <cstring>
+#include <dirent.h>
+#include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <string>
+#include <thread>
 #include <tuple>
 #include <unistd.h>
 #include <vector>
-#include <dirent.h>
-#include <fstream>
-#include <thread>
-#include <cstring>
-#include <boost/interprocess/sync/named_mutex.hpp>
-#include <boost/interprocess/sync/scoped_lock.hpp>
 
 using namespace lbcrypto;
-using namespace boost::interprocess; //named mutexes for locks
+using namespace boost::interprocess; // named mutexes for locks
 
 using complexVector = std::vector<std::complex<double>>;
 using complexMatrix = std::vector<complexVector>;
@@ -60,8 +58,6 @@ using ciphertextMatrix = std::vector<Ciphertext<DCRTPoly>>;
 const int VECTORSIZE = 4;
 const int CRYPTOCONTEXT_INDEX = 0;
 const int PUBLICKEY_INDEX = 1;
-
-
 
 /**
  * Config container. stores locations of I/O files for IPC
@@ -78,10 +74,12 @@ struct Configs {
   // Save-Load locations for keys
   const std::string DATAFOLDER = "demoData";
   std::string ccLocation = DATAFOLDER + "/cryptocontext.txt";
-  std::string pubKeyLocation = DATAFOLDER + "/key_pub.txt";    // Pub key
-  std::string multKeyLocation = DATAFOLDER + "/key_mult.txt";  // relinearization key
-  std::string rotKeyLocation = DATAFOLDER + "/key_rot.txt";    // automorphism / rotation key
-  
+  std::string pubKeyLocation = DATAFOLDER + "/key_pub.txt"; // Pub key
+  std::string multKeyLocation =
+      DATAFOLDER + "/key_mult.txt"; // relinearization key
+  std::string rotKeyLocation =
+      DATAFOLDER + "/key_rot.txt"; // automorphism / rotation key
+
   // Save-load locations for RAW ciphertexts
   std::string cipherOneLocation = DATAFOLDER + "/ciphertext1.txt";
   std::string cipherTwoLocation = DATAFOLDER + "/ciphertext2.txt";
@@ -90,20 +88,21 @@ struct Configs {
   std::string cipherMultLocation = DATAFOLDER + "/ciphertextMult.txt";
   std::string cipherAddLocation = DATAFOLDER + "/ciphertextAdd.txt";
   std::string cipherRotLocation = DATAFOLDER + "/ciphertextRot.txt";
-  std::string cipherRotNegLocation = DATAFOLDER + "/ciphertextRotNegLocation.txt";
-  std::string clientVectorLocation = DATAFOLDER + "/ciphertextVectorFromClient.txt";
-  
+  std::string cipherRotNegLocation =
+      DATAFOLDER + "/ciphertextRotNegLocation.txt";
+  std::string clientVectorLocation =
+      DATAFOLDER + "/ciphertextVectorFromClient.txt";
+
   const std::string SERVER_LOCK = "s_lock";
   const std::string CLIENT_LOCK = "c_lock";
 
-  //contain the lock mutex 
+  // contain the lock mutex
   named_mutex *serverLock;
   named_mutex *clientLock;
-  
 };
 
 // global configuration structure that contains all locations for IPC
-Configs GConf;  
+Configs GConf;
 
 /**
  * validateData - test if two vectors (really, two indexable containers) are
@@ -126,7 +125,7 @@ bool validateData(const T &v1, const T &v2, const float &tol = 0.0001) {
       // numbers are extremely small
       if (std::abs(v1[i] - v2[i]) > tol) {
         return false;
-      }  // Pass ABSOLUTE CHECK: it's true and we continue
+      } // Pass ABSOLUTE CHECK: it's true and we continue
     }
   }
   return true;
@@ -139,8 +138,7 @@ bool validateData(const T &v1, const T &v2, const float &tol = 0.0001) {
  * @param v1 - container 1
  * @param v2 - container 2
  */
-template <typename T>
-void displayVectors(T v1, T v2) {
+template <typename T> void displayVectors(T v1, T v2) {
   for (unsigned int i = 0; i < v1.size(); i++) {
     std::cout << v1[i] << "," << v2[i] << '\n';
   }
@@ -194,15 +192,15 @@ void nap(const int &ms = 500) {
  * createAndAcquireLock
  * create the lock and immediately "get" the lock.
  */
-named_mutex* createAndAcquireLock(const std::string &lockName) {
+named_mutex *createAndAcquireLock(const std::string &lockName) {
   try {
     auto mtx = new named_mutex(create_only, lockName.c_str());
     mtx->lock();
     return mtx;
-  } catch (interprocess_exception &ex){
+  } catch (interprocess_exception &ex) {
     named_mutex::remove(lockName.c_str());
-    std::cerr<<"Error in createAndAquireLock create "<<lockName
-	     << " "<< ex.what() << std::endl;
+    std::cerr << "Error in createAndAquireLock create " << lockName << " "
+              << ex.what() << std::endl;
     exit(EXIT_FAILURE);
   }
   return NULL;
@@ -212,26 +210,27 @@ named_mutex* createAndAcquireLock(const std::string &lockName) {
  * OpenLock
  * open an existing lock
  */
-named_mutex* openLock(const std::string &lockName) {
+named_mutex *openLock(const std::string &lockName) {
   bool done(false);
   while (!done) {
     try {
       auto mtx = new named_mutex(open_only, lockName.c_str());
       done = true;
-	  
+
       return mtx;
-    } catch (interprocess_exception &ex){
+    } catch (interprocess_exception &ex) {
       if (ex.what() == std::string("No such file or directory")) {
-		std::cout << "waiting for " << lockName << " to be created" << std::endl;
+        std::cout << "waiting for " << lockName << " to be created"
+                  << std::endl;
       } else {
-		std::cerr<<"Error in openLock create "<<lockName
-				 << " "<< ex.what() << std::endl;
-		exit(EXIT_FAILURE);
+        std::cerr << "Error in openLock create " << lockName << " " << ex.what()
+                  << std::endl;
+        exit(EXIT_FAILURE);
       }
       nap(1000);
     }
   }
-  
+
   return NULL;
 }
 
@@ -239,27 +238,25 @@ named_mutex* openLock(const std::string &lockName) {
  * acquireLock
  *  - "get" the lock. sleeps until successful
  */
-void acquireLock(named_mutex* mtx, const std::string &lockName) { 
+void acquireLock(named_mutex *mtx, const std::string &lockName) {
   try {
     mtx->lock();
-  } catch (interprocess_exception &ex){
-    std::cerr<<"Error in aquireLock lock "<<lockName 
-	     << " "<< ex.what() << std::endl;
+  } catch (interprocess_exception &ex) {
+    std::cerr << "Error in aquireLock lock " << lockName << " " << ex.what()
+              << std::endl;
   }
-
-
 }
 
 /**
  * releaseLock
  *  - "release" the lock
  */
-void releaseLock(named_mutex* mtx, const std::string &lockName){
+void releaseLock(named_mutex *mtx, const std::string &lockName) {
   try {
     mtx->unlock();
-  } catch (interprocess_exception &ex){
-    std::cerr<<"Error in releaseLock lock "<<lockName 
-	     << " "<< ex.what() << std::endl;
+  } catch (interprocess_exception &ex) {
+    std::cerr << "Error in releaseLock lock " << lockName << " " << ex.what()
+              << std::endl;
   }
 }
 
@@ -267,13 +264,13 @@ void releaseLock(named_mutex* mtx, const std::string &lockName){
  * removeLock
  *  - "remove" the lock by deleting it from the system
  */
-void removeLock(named_mutex* mtx, const std::string &lockName){
+void removeLock(named_mutex *mtx, const std::string &lockName) {
   try {
     named_mutex::remove(lockName.c_str());
-  } catch (interprocess_exception &ex){
-    std::cerr<<"Error in removeLock lock "<<lockName 
-	     << " "<< ex.what() << std::endl;
+  } catch (interprocess_exception &ex) {
+    std::cerr << "Error in removeLock lock " << lockName << " " << ex.what()
+              << std::endl;
   }
 }
 
-#endif  // REAL_SERVER_UTILS_H
+#endif // REAL_SERVER_UTILS_H
