@@ -1,5 +1,7 @@
 # OpenFHE Serialization examples
 
+## Initial release -- Please let us know of any issues and read the [release notes](Release_Notes.md) for details
+
 Sample programs for Encrypted computation shared between cooperating
 processes.  There are several example programs available that show how
 to use OpenFHE to build systems of multiple cooperating heavyweight
